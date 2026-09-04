@@ -182,3 +182,15 @@ button:disabled { opacity: 0.45; cursor: default; }
 }
 .modale h2 { font-size: 21px; font-weight: 800; margin: 0 0 8px; }
 .modale li { padding: 3px 0; }
+
+/* ------------------------------------------------------------- onboarding */
+.modale.onboarding { width: min(520px, calc(100vw - 48px)); }
+.accueil-onboarding { text-align: center; }
+.accueil-onboarding img { width: 108px; height: 108px; margin-top: 6px; }
+.accueil-onboarding h2 { margin-top: 10px; }
+.onboarding .actions { margin-top: 20px; justify-content: center; }
+.points { display: flex; gap: 8px; justify-content: center; margin-top: 16px; }
+.points span {
+  width: 8px; height: 8px; border-radius: 50%; background: var(--sable);
+}
+.points span.actif { background: var(--roux); }

@@ -42,6 +42,10 @@ export default function App() {
   const [modele, setModele] = useState(() => localStorage.getItem('filouModele') ?? 'haiku')
   const [consignes, setConsignes] = useState(() => localStorage.getItem('filouConsignes') ?? '')
   const [detail, setDetail] = useState(() => localStorage.getItem('filouDetail') ?? 'equilibre')
+  // Onboarding : trois étapes au tout premier lancement, puis plus jamais.
+  const [etape, setEtape] = useState<number | null>(() =>
+    localStorage.getItem('filouOnboarde') ? null : 0,
+  )
 
   const analyser = async () => {
     setStatut('Filou renifle le Bureau et les Téléchargements…')
@@ -86,6 +90,11 @@ export default function App() {
   const changerConsignes = (c: string) => {
     setConsignes(c)
     localStorage.setItem('filouConsignes', c)
+  }
+
+  const finirOnboarding = () => {
+    localStorage.setItem('filouOnboarde', 'oui')
+    setEtape(null)
   }
 
   const changerDetail = (d: string) => {
@@ -230,6 +239,79 @@ export default function App() {
     for (const r of retenues) parDossier.set(r.dossier, (parDossier.get(r.dossier) ?? 0) + 1)
     return [...parDossier.entries()].sort((a, b) => b[1] - a[1])
   }, [retenues])
+
+  const blocIa = (
+    <>
+      {etatIa === undefined && <p className="gris">Recherche de Claude Code…</p>}
+      {etatIa && etatIa.cle && (
+        <p className="gris">
+          Clé API enregistrée dans le trousseau : l'affinage passe directement par l'API Anthropic
+          (plus rapide que le CLI). Seuls les noms de fichiers sont envoyés, jamais leur contenu.{' '}
+          <button className="petit-bouton" onClick={() => enregistrerCle('')}>
+            Retirer la clé
+          </button>
+        </p>
+      )}
+      {etatIa && !etatIa.cle && etatIa.cli && (
+        <p className="gris">
+          Claude Code détecté (<span className="mono">{etatIa.cli}</span>) : ça marchera tout seul
+          avec ton abonnement Claude. Tu peux aussi mettre une clé API, c'est plus rapide.
+        </p>
+      )}
+      {etatIa && !etatIa.cle && !etatIa.cli && (
+        <p className="gris">
+          Claude Code est introuvable sur cette machine. Ajoute une clé API Anthropic ci-dessous, ou
+          installe Claude Code (claude.com/claude-code).
+        </p>
+      )}
+      {etatIa && !etatIa.cle && (
+        <div className="ligne-reglage">
+          <input
+            type="password"
+            placeholder="Clé API Anthropic (sk-ant-…)"
+            value={cleSaisie}
+            onChange={(e) => setCleSaisie(e.target.value)}
+          />
+          <button
+            className="petit-bouton"
+            disabled={!cleSaisie.trim()}
+            onClick={() => enregistrerCle(cleSaisie)}
+          >
+            Enregistrer
+          </button>
+        </div>
+      )}
+      <label className="ligne-reglage">
+        Modèle pour l'affinage
+        <select value={modele} onChange={(e) => changerModele(e.target.value)}>
+          <option value="haiku">Rapide (Haiku)</option>
+          <option value="sonnet">Équilibré (Sonnet)</option>
+          <option value="opus">Malin mais lent (Opus)</option>
+          <option value="">Réglage par défaut du CLI</option>
+        </select>
+      </label>
+    </>
+  )
+
+  const blocMethode = (
+    <>
+      <textarea
+        className="consignes"
+        rows={4}
+        placeholder="Tes consignes de rangement… (ex. : les factures par année, un dossier par projet, les captures d'écran par mois)"
+        value={consignes}
+        onChange={(e) => changerConsignes(e.target.value)}
+      />
+      <label className="ligne-reglage">
+        Niveau de détail de l'arborescence
+        <select value={detail} onChange={(e) => changerDetail(e.target.value)}>
+          <option value="simple">Simple : des racines, pas de sous-dossiers</option>
+          <option value="equilibre">Équilibré : un sous-dossier quand utile</option>
+          <option value="maniaque">Maniaque : sous-dossiers stricts partout</option>
+        </select>
+      </label>
+    </>
+  )
 
   return (
     <div className="page">
@@ -409,82 +491,82 @@ export default function App() {
         )}
       </div>
 
+      {etape !== null && (
+        <div className="voile">
+          <div className="modale onboarding">
+            {etape === 0 && (
+              <div className="accueil-onboarding">
+                <img src={logo} alt="" />
+                <h2>Salut, moi c'est Filou.</h2>
+                <p className="gris">
+                  Je range les fichiers qui traînent sur ton Bureau et dans tes Téléchargements :
+                  j'analyse, je te propose un plan de dossiers, tu décoches ce que tu veux laisser
+                  tranquille, et je range. Tout est annulable depuis le journal, et rien ne quitte
+                  ta machine sans toi.
+                </p>
+              </div>
+            )}
+            {etape === 1 && (
+              <>
+                <h2>Connecte ton IA</h2>
+                <p className="gris">
+                  Pour un plan malin (projets reconnus, factures par année…), Filou demande à
+                  Claude. Seuls les noms de fichiers sont envoyés, jamais leur contenu.
+                </p>
+                {blocIa}
+              </>
+            )}
+            {etape === 2 && (
+              <>
+                <h2>Ta façon de ranger</h2>
+                <p className="gris">
+                  Dis-moi tes habitudes, j'en tiendrai compte à chaque plan. Tu pourras changer
+                  tout ça plus tard dans les Réglages.
+                </p>
+                {blocMethode}
+              </>
+            )}
+            <div className="actions">
+              {etape > 0 && (
+                <button className="petit-bouton" onClick={() => setEtape(etape - 1)}>
+                  Retour
+                </button>
+              )}
+              {etape < 2 ? (
+                <button className="gros-bouton" onClick={() => setEtape(etape + 1)}>
+                  Continuer
+                </button>
+              ) : (
+                <button className="gros-bouton" onClick={finirOnboarding}>
+                  C'est parti
+                </button>
+              )}
+              {etape === 0 && (
+                <button className="petit-bouton" onClick={finirOnboarding}>
+                  Passer
+                </button>
+              )}
+            </div>
+            <div className="points">
+              {[0, 1, 2].map((i) => (
+                <span key={i} className={i === etape ? 'actif' : ''} />
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {reglages && (
         <div className="voile" onClick={() => setReglages(false)}>
           <div className="modale" onClick={(e) => e.stopPropagation()}>
             <h2>Réglages</h2>
             <h3>Intelligence artificielle</h3>
-            {etatIa === undefined && <p className="gris">Recherche de Claude Code…</p>}
-            {etatIa && etatIa.cle && (
-              <p className="gris">
-                Clé API enregistrée dans le trousseau : l'affinage passe directement par l'API
-                Anthropic (plus rapide que le CLI). Seuls les noms de fichiers sont envoyés,
-                jamais leur contenu.{' '}
-                <button className="petit-bouton" onClick={() => enregistrerCle('')}>
-                  Retirer la clé
-                </button>
-              </p>
-            )}
-            {etatIa && !etatIa.cle && etatIa.cli && (
-              <p className="gris">
-                Claude Code détecté (<span className="mono">{etatIa.cli}</span>). L'affinage passe par ton abonnement
-                Claude, et seuls les noms de fichiers sont envoyés, jamais leur contenu.
-              </p>
-            )}
-            {etatIa && !etatIa.cle && !etatIa.cli && (
-              <p className="gris">
-                Claude Code est introuvable sur cette machine. Ajoute une clé API Anthropic
-                ci-dessous, ou installe Claude Code (claude.com/claude-code).
-              </p>
-            )}
-            {etatIa && !etatIa.cle && (
-              <div className="ligne-reglage">
-                <input
-                  type="password"
-                  placeholder="Clé API Anthropic (sk-ant-…)"
-                  value={cleSaisie}
-                  onChange={(e) => setCleSaisie(e.target.value)}
-                />
-                <button
-                  className="petit-bouton"
-                  disabled={!cleSaisie.trim()}
-                  onClick={() => enregistrerCle(cleSaisie)}
-                >
-                  Enregistrer
-                </button>
-              </div>
-            )}
+            {blocIa}
             <h3>Ta méthode de rangement</h3>
             <p className="gris">
-              Explique à Filou comment tu ranges, il en tiendra compte à chaque affinage
-              par l'IA. Exemples : « les factures par année », « les captures d'écran par
-              mois », « un dossier par projet, mes projets s'appellent Filou, Médor et
-              Lexadev », « tout ce qui est vieux de plus d'un an dans Archives ».
+              Explique à Filou comment tu ranges, il en tiendra compte à chaque affinage par l'IA.
             </p>
-            <textarea
-              className="consignes"
-              rows={4}
-              placeholder="Tes consignes de rangement…"
-              value={consignes}
-              onChange={(e) => changerConsignes(e.target.value)}
-            />
-            <label className="ligne-reglage">
-              Niveau de détail de l'arborescence
-              <select value={detail} onChange={(e) => changerDetail(e.target.value)}>
-                <option value="simple">Simple : des racines, pas de sous-dossiers</option>
-                <option value="equilibre">Équilibré : un sous-dossier quand utile</option>
-                <option value="maniaque">Maniaque : sous-dossiers stricts partout</option>
-              </select>
-            </label>
-            <label className="ligne-reglage">
-              Modèle pour l'affinage
-              <select value={modele} onChange={(e) => changerModele(e.target.value)}>
-                <option value="haiku">Rapide (Haiku)</option>
-                <option value="sonnet">Équilibré (Sonnet)</option>
-                <option value="opus">Malin mais lent (Opus)</option>
-                <option value="">Réglage par défaut du CLI</option>
-              </select>
-            </label>
+            {blocMethode}
             <div className="actions">
               <button className="gros-bouton" onClick={() => setReglages(false)}>
                 Fermer

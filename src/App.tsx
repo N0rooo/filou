@@ -571,6 +571,15 @@ export default function App() {
               <button className="gros-bouton" onClick={() => setReglages(false)}>
                 Fermer
               </button>
+              <button
+                className="petit-bouton"
+                onClick={() => {
+                  setReglages(false)
+                  setEtape(0)
+                }}
+              >
+                Revoir la présentation
+              </button>
             </div>
           </div>
         </div>

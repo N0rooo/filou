@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'
 import logo from './assets/filou.svg'
@@ -31,7 +31,14 @@ export default function App() {
   const [iaProgres, setIaProgres] = useState<{ fait: number; total: number } | null>(null)
   const [iaDebut, setIaDebut] = useState<number | null>(null)
   const [, setTic] = useState(0)
-  const [cheminIa, setCheminIa] = useState<string | null | undefined>(undefined)
+  // Décompte façon Médor : projection figée à chaque lot terminé (marge 1.35,
+  // les lots parallèles finissent par les plus lents), vrai compte à rebours
+  // entre deux — le chiffre ne remonte jamais tout seul.
+  const etapePrec = useRef(-1)
+  const estimeRestant = useRef(0)
+  const dateEstime = useRef(Date.now())
+  const [etatIa, setEtatIa] = useState<{ cli: string | null; cle: boolean } | undefined>(undefined)
+  const [cleSaisie, setCleSaisie] = useState('')
   const [modele, setModele] = useState(() => localStorage.getItem('filouModele') ?? 'haiku')
 
   const analyser = async () => {
@@ -59,7 +66,7 @@ export default function App() {
   useEffect(() => {
     analyser()
     chargerJournal()
-    invoke<string | null>('etat_ia').then(setCheminIa)
+    invoke<{ cli: string | null; cle: boolean }>('etat_ia').then(setEtatIa)
     const abo = listen<{ fait: number; total: number }>('ia-progres', (e) => setIaProgres(e.payload))
     // Un tic par seconde pour rafraîchir le temps écoulé/restant affiché.
     const tic = setInterval(() => setTic((t) => t + 1), 1000)
@@ -106,6 +113,8 @@ export default function App() {
     setStatut("Filou réfléchit avec l'IA…")
     setIaProgres(null)
     setIaDebut(Date.now())
+    etapePrec.current = -1
+    estimeRestant.current = 0
     setErreur(null)
     try {
       const noms = zones.flatMap((z) => z.fichiers.map((f) => f.nom))
@@ -172,6 +181,24 @@ export default function App() {
     }
   }
 
+  const enregistrerCle = async (cle: string) => {
+    try {
+      await invoke<boolean>('definir_cle_api', { cle })
+      setCleSaisie('')
+      setEtatIa(await invoke<{ cli: string | null; cle: boolean }>('etat_ia'))
+    } catch (e) {
+      setErreur(String(e))
+    }
+  }
+
+  // Projection figée : recalculée uniquement quand un lot de plus est terminé.
+  if (iaDebut && iaProgres && iaProgres.fait > 0 && iaProgres.fait !== etapePrec.current) {
+    etapePrec.current = iaProgres.fait
+    dateEstime.current = Date.now()
+    estimeRestant.current =
+      (((Date.now() - iaDebut) / 1000) * (iaProgres.total - iaProgres.fait) * 1.35) / iaProgres.fait
+  }
+
   const resumeConfirmation = useMemo(() => {
     const parDossier = new Map<string, number>()
     for (const r of retenues) parDossier.set(r.dossier, (parDossier.get(r.dossier) ?? 0) + 1)
@@ -194,7 +221,6 @@ export default function App() {
           <div className="statut">
             {(() => {
               if (!iaDebut) return statut
-              const ecoule = (Date.now() - iaDebut) / 1000
               const duree = (s: number) =>
                 s >= 60
                   ? `${Math.floor(s / 60)} min ${String(Math.round(s % 60)).padStart(2, '0')} s`
@@ -202,10 +228,14 @@ export default function App() {
               if (iaProgres && iaProgres.total > 0 && iaProgres.fait >= iaProgres.total)
                 return 'Filou termine…'
               if (iaProgres && iaProgres.fait > 0) {
-                const restant = (ecoule / iaProgres.fait) * (iaProgres.total - iaProgres.fait)
-                return `Filou réfléchit… lot ${iaProgres.fait}/${iaProgres.total} terminé, encore ~${duree(restant)}`
+                const decompte = Math.round(
+                  estimeRestant.current - (Date.now() - dateEstime.current) / 1000,
+                )
+                const fin = decompte > 3 ? `≈ ${duree(decompte)} restantes` : 'encore un peu…'
+                return `Filou réfléchit… lot ${iaProgres.fait}/${iaProgres.total} terminé, ${fin}`
               }
               const lots = iaProgres?.total
+              const ecoule = (Date.now() - iaDebut) / 1000
               return `Filou réfléchit${lots ? ` (${lots} lot${lots > 1 ? 's' : ''} à traiter)` : ''}… ${duree(ecoule)} écoulées`
             })()}
             {iaDebut && iaProgres && iaProgres.total > 0 && (
@@ -346,18 +376,45 @@ export default function App() {
           <div className="modale" onClick={(e) => e.stopPropagation()}>
             <h2>Réglages</h2>
             <h3>Intelligence artificielle</h3>
-            {cheminIa === undefined && <p className="gris">Recherche de Claude Code…</p>}
-            {cheminIa === null && (
+            {etatIa === undefined && <p className="gris">Recherche de Claude Code…</p>}
+            {etatIa && etatIa.cle && (
               <p className="gris">
-                Claude Code est introuvable sur cette machine : le bouton « Affiner le plan avec l'IA » ne pourra pas
-                fonctionner. Installe Claude Code (claude.com/claude-code) ou vérifie qu'il est dans le PATH.
+                Clé API enregistrée dans le trousseau : l'affinage passe directement par l'API
+                Anthropic (plus rapide que le CLI). Seuls les noms de fichiers sont envoyés,
+                jamais leur contenu.{' '}
+                <button className="petit-bouton" onClick={() => enregistrerCle('')}>
+                  Retirer la clé
+                </button>
               </p>
             )}
-            {cheminIa && (
+            {etatIa && !etatIa.cle && etatIa.cli && (
               <p className="gris">
-                Claude Code détecté (<span className="mono">{cheminIa}</span>). L'affinage passe par ton abonnement
+                Claude Code détecté (<span className="mono">{etatIa.cli}</span>). L'affinage passe par ton abonnement
                 Claude, et seuls les noms de fichiers sont envoyés, jamais leur contenu.
               </p>
+            )}
+            {etatIa && !etatIa.cle && !etatIa.cli && (
+              <p className="gris">
+                Claude Code est introuvable sur cette machine. Ajoute une clé API Anthropic
+                ci-dessous, ou installe Claude Code (claude.com/claude-code).
+              </p>
+            )}
+            {etatIa && !etatIa.cle && (
+              <div className="ligne-reglage">
+                <input
+                  type="password"
+                  placeholder="Clé API Anthropic (sk-ant-…)"
+                  value={cleSaisie}
+                  onChange={(e) => setCleSaisie(e.target.value)}
+                />
+                <button
+                  className="petit-bouton"
+                  disabled={!cleSaisie.trim()}
+                  onClick={() => enregistrerCle(cleSaisie)}
+                >
+                  Enregistrer
+                </button>
+              </div>
             )}
             <label className="ligne-reglage">
               Modèle pour l'affinage

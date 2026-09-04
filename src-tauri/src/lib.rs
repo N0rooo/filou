@@ -263,18 +263,103 @@ async fn plan_ia(
     .map_err(|e| e.to_string())?
 }
 
-/// Ce que le frontend doit savoir sur l'IA : Claude Code est-il là ?
+/// Ce que le frontend doit savoir sur l'IA : CLI détecté ? clé enregistrée ?
+#[derive(Serialize)]
+struct EtatIa {
+    cli: Option<String>,
+    cle: bool,
+}
+
 #[tauri::command]
-async fn etat_ia() -> Option<String> {
-    tauri::async_runtime::spawn_blocking(|| {
-        find_claude_cli().map(|p| p.to_string_lossy().to_string())
+async fn etat_ia() -> EtatIa {
+    tauri::async_runtime::spawn_blocking(|| EtatIa {
+        cli: find_claude_cli().map(|p| p.to_string_lossy().to_string()),
+        cle: cle_api().is_some(),
     })
     .await
-    .unwrap_or(None)
+    .unwrap_or(EtatIa { cli: None, cle: false })
 }
 
 const LOT_IA: usize = 60;
-const TRAVAILLEURS_IA: usize = 3;
+const TRAVAILLEURS_IA: usize = 4;
+const KEYRING_SERVICE: &str = "filou";
+const API_URL: &str = "https://api.anthropic.com/v1/messages";
+
+/// Source d'authentification IA : clé API si enregistrée, sinon le CLI.
+enum AuthIa {
+    Cle(String),
+    Cli(PathBuf),
+}
+
+fn cle_api() -> Option<String> {
+    keyring::Entry::new(KEYRING_SERVICE, "anthropic-api-key")
+        .ok()
+        .and_then(|e| e.get_password().ok())
+        .filter(|v| !v.trim().is_empty())
+}
+
+/// Identifiant de modèle complet pour l'API (le CLI accepte les alias, pas l'API).
+fn modele_api(modele: &str) -> &'static str {
+    match modele {
+        "sonnet" => "claude-sonnet-5",
+        "opus" => "claude-opus-5",
+        _ => "claude-haiku-4-5-20251001",
+    }
+}
+
+fn request_via_api(cle: &str, modele: &str, prompt: &str) -> Result<String, String> {
+    let client = reqwest::blocking::Client::builder()
+        .timeout(Duration::from_secs(300))
+        .build()
+        .map_err(|e| e.to_string())?;
+    let body = serde_json::json!({
+        "model": modele_api(modele),
+        "max_tokens": 8000,
+        "output_config": {"effort": "low"},
+        "messages": [{"role": "user", "content": prompt}]
+    });
+    let reponse = client
+        .post(API_URL)
+        .header("x-api-key", cle)
+        .header("anthropic-version", "2023-06-01")
+        .header("content-type", "application/json")
+        .json(&body)
+        .send()
+        .map_err(|e| format!("Appel à l'API Claude impossible : {e}"))?;
+    let statut = reponse.status();
+    let valeur: serde_json::Value = reponse
+        .json()
+        .map_err(|e| format!("Réponse de l'API Claude illisible : {e}"))?;
+    if !statut.is_success() {
+        let message = valeur
+            .pointer("/error/message")
+            .and_then(|v| v.as_str())
+            .unwrap_or("erreur inconnue");
+        return Err(format!("API Claude : {message}"));
+    }
+    valeur
+        .pointer("/content/0/text")
+        .and_then(|v| v.as_str())
+        .map(|t| t.to_string())
+        .ok_or_else(|| "Réponse de l'API Claude sans texte.".into())
+}
+
+#[tauri::command]
+async fn definir_cle_api(cle: String) -> Result<bool, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let entree = keyring::Entry::new(KEYRING_SERVICE, "anthropic-api-key")
+            .map_err(|e| e.to_string())?;
+        if cle.trim().is_empty() {
+            let _ = entree.delete_credential();
+            Ok(false)
+        } else {
+            entree.set_password(cle.trim()).map_err(|e| e.to_string())?;
+            Ok(true)
+        }
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
 
 #[derive(Serialize, Clone)]
 struct ProgresIa {
@@ -294,8 +379,12 @@ fn plan_ia_bloquant(
 ) -> Result<HashMap<String, String>, String> {
     use std::sync::atomic::{AtomicUsize, Ordering};
 
-    let bin = find_claude_cli()
-        .ok_or("Claude Code introuvable sur cette machine : le plan reste heuristique.")?;
+    let auth = match cle_api() {
+        Some(cle) => AuthIa::Cle(cle),
+        None => AuthIa::Cli(find_claude_cli().ok_or(
+            "Aucune IA disponible : ajoute ta clé API dans les Réglages ou installe Claude Code.",
+        )?),
+    };
     let retenus: Vec<String> = fichiers.into_iter().take(MAX_FICHIERS_IA).collect();
     let lots: Vec<&[String]> = retenus.chunks(LOT_IA).collect();
     let total = lots.len();
@@ -311,7 +400,7 @@ fn plan_ia_bloquant(
                 loop {
                     let i = indice.fetch_add(1, Ordering::Relaxed);
                     let Some(lot) = lots.get(i) else { break };
-                    miens.push(classer_lot(&bin, &modele, lot));
+                    miens.push(classer_lot(&auth, &modele, lot));
                     let f = fait.fetch_add(1, Ordering::Relaxed) + 1;
                     emettre_progres(app, f, total);
                 }
@@ -339,7 +428,7 @@ fn plan_ia_bloquant(
 }
 
 fn classer_lot(
-    bin: &PathBuf,
+    auth: &AuthIa,
     modele: &str,
     lot: &[String],
 ) -> Result<HashMap<String, String>, String> {
@@ -355,7 +444,10 @@ fn classer_lot(
          UNIQUEMENT par un tableau JSON, sans aucun texte autour : \
          [{{\"fichier\": \"nom exact\", \"dossier\": \"…\"}}]\n\n{liste}"
     );
-    let reponse = run_claude_cli(bin, modele, &prompt)?;
+    let reponse = match auth {
+        AuthIa::Cle(cle) => request_via_api(cle, modele, &prompt)?,
+        AuthIa::Cli(bin) => run_claude_cli(bin, modele, &prompt)?,
+    };
     let tableau = extraire_tableau_json(&reponse)?;
     let mut table = HashMap::new();
     if let Some(items) = tableau.as_array() {
@@ -609,6 +701,7 @@ pub fn run() {
             inventaire,
             plan_ia,
             etat_ia,
+            definir_cle_api,
             ranger,
             journal_liste,
             annuler

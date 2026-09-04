@@ -44,6 +44,11 @@ header .coin { margin-left: auto; }
   display: flex; align-items: center; justify-content: space-between; gap: 14px;
   font-weight: 600; margin: 14px 0;
 }
+.ligne-reglage input {
+  flex: 1; font-family: var(--mono); font-size: 12.5px; color: var(--brun);
+  background: var(--panneau); border: 1.5px solid var(--sable); border-radius: 10px;
+  padding: 8px 10px;
+}
 .ligne-reglage select {
   font-family: var(--affiche); font-size: 13.5px; color: var(--brun);
   background: var(--panneau); border: 1.5px solid var(--sable); border-radius: 10px;

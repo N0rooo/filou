@@ -256,6 +256,7 @@ async fn plan_ia(
     fichiers: Vec<String>,
     modele: Option<String>,
     consignes: Option<String>,
+    detail: Option<String>,
 ) -> Result<HashMap<String, String>, String> {
     tauri::async_runtime::spawn_blocking(move || {
         plan_ia_bloquant(
@@ -263,6 +264,7 @@ async fn plan_ia(
             fichiers,
             modele.unwrap_or_default(),
             consignes.unwrap_or_default(),
+            detail.unwrap_or_default(),
         )
     })
     .await
@@ -383,6 +385,7 @@ fn plan_ia_bloquant(
     fichiers: Vec<String>,
     modele: String,
     consignes: String,
+    detail: String,
 ) -> Result<HashMap<String, String>, String> {
     use std::sync::atomic::{AtomicUsize, Ordering};
 
@@ -407,7 +410,7 @@ fn plan_ia_bloquant(
                 loop {
                     let i = indice.fetch_add(1, Ordering::Relaxed);
                     let Some(lot) = lots.get(i) else { break };
-                    miens.push(classer_lot(&auth, &modele, &consignes, lot));
+                    miens.push(classer_lot(&auth, &modele, &consignes, &detail, lot));
                     let f = fait.fetch_add(1, Ordering::Relaxed) + 1;
                     emettre_progres(app, f, total);
                 }
@@ -438,8 +441,25 @@ fn classer_lot(
     auth: &AuthIa,
     modele: &str,
     consignes: &str,
+    detail: &str,
     lot: &[String],
 ) -> Result<HashMap<String, String>, String> {
+    let bloc_detail = match detail {
+        "simple" => {
+            "\n\nNIVEAU DE DETAIL DEMANDE : SIMPLE. Un seul niveau de dossier, aucun \
+             sous-dossier, une douzaine de racines maximum."
+        }
+        "maniaque" => {
+            "\n\nNIVEAU DE DETAIL DEMANDE : MANIAQUE. Sous-dossiers systematiques et \
+             stricts, deux a trois niveaux presque partout : le theme, puis le projet \
+             ou la periode (annee, voire annee-mois). Un fichier ne reste a la racine \
+             que s'il est vraiment inclassable."
+        }
+        _ => {
+            "\n\nNIVEAU DE DETAIL DEMANDE : EQUILIBRE. Un sous-dossier quand il apporte \
+             vraiment quelque chose (deux niveaux le plus souvent), sinon la racine seule."
+        }
+    };
     let liste = lot.iter().map(|n| format!("- {n}")).collect::<Vec<_>>().join("\n");
     let bloc_consignes = if consignes.trim().is_empty() {
         String::new()
@@ -459,7 +479,7 @@ fn classer_lot(
          thèmes récurrents d'après les noms (dates, mots communs, préfixes) et regroupe-les \
          sous une même racine. Racines de base : Captures d'écran, Images, Documents, \
          Factures, Administratif, Projets, Installeurs, Archives, Code, Vidéos, Audio, \
-         Divers — crée d'autres racines seulement si un vrai thème le mérite.{bloc_consignes}\
+         Divers — crée d'autres racines seulement si un vrai thème le mérite.{bloc_detail}{bloc_consignes}\
          \nRéponds UNIQUEMENT par un tableau JSON, sans aucun texte autour : \
          [{{\"fichier\": \"nom exact\", \"dossier\": \"…\"}}]\n\n{liste}"
     );

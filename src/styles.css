@@ -143,6 +143,17 @@ button:disabled { opacity: 0.45; cursor: default; }
 .groupe summary .compte { margin-left: 2px; }
 .groupe input[type='checkbox'] { accent-color: var(--roux); width: 16px; height: 16px; }
 
+.detail-groupe { padding-bottom: 8px; }
+.sous-chemin {
+  display: flex; align-items: center; gap: 8px;
+  margin: 8px 8px 2px 34px; font-size: 13px; font-weight: 700; color: var(--roux-fonce);
+}
+.modale .consignes {
+  width: 100%; font-family: var(--affiche); font-size: 13.5px; color: var(--brun);
+  background: var(--panneau); border: 1.5px solid var(--sable); border-radius: 12px;
+  padding: 10px 12px; resize: vertical; margin: 4px 0 6px;
+}
+.modale .consignes:focus { outline: none; border-color: var(--roux); }
 .fichiers { list-style: none; margin: 0 0 10px; padding: 0 8px 0 34px; }
 .fichiers li {
   display: flex; align-items: baseline; gap: 12px;

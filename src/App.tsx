@@ -40,6 +40,7 @@ export default function App() {
   const [etatIa, setEtatIa] = useState<{ cli: string | null; cle: boolean } | undefined>(undefined)
   const [cleSaisie, setCleSaisie] = useState('')
   const [modele, setModele] = useState(() => localStorage.getItem('filouModele') ?? 'haiku')
+  const [consignes, setConsignes] = useState(() => localStorage.getItem('filouConsignes') ?? '')
 
   const analyser = async () => {
     setStatut('Filou renifle le Bureau et les Téléchargements…')
@@ -81,28 +82,47 @@ export default function App() {
     localStorage.setItem('filouModele', m)
   }
 
-  // Regroupement par (zone, catégorie), l'ordre suit le volume.
+  const changerConsignes = (c: string) => {
+    setConsignes(c)
+    localStorage.setItem('filouConsignes', c)
+  }
+
+  // Regroupement par (zone, racine) : « Projets/Filou/Logos » compte dans la
+  // racine « Projets », le reste du chemin s'affiche en sous-groupe dedans.
   const groupes = useMemo(() => {
     if (!zones) return []
     return zones.map((z) => {
-      const parCategorie = new Map<string, Fiche[]>()
+      const parRacine = new Map<string, Fiche[]>()
       for (const f of z.fichiers) {
-        const liste = parCategorie.get(f.categorie) ?? []
+        const racine = f.categorie.split('/')[0]
+        const liste = parRacine.get(racine) ?? []
         liste.push(f)
-        parCategorie.set(f.categorie, liste)
+        parRacine.set(racine, liste)
       }
-      const categories = [...parCategorie.entries()].sort((a, b) => b[1].length - a[1].length)
+      const categories = [...parRacine.entries()].sort((a, b) => b[1].length - a[1].length)
       return { zone: z, categories }
     })
   }, [zones])
+
+  const sousGroupes = (fiches: Fiche[]) => {
+    const m = new Map<string, Fiche[]>()
+    for (const f of fiches) {
+      const i = f.categorie.indexOf('/')
+      const reste = i === -1 ? '' : f.categorie.slice(i + 1)
+      const liste = m.get(reste) ?? []
+      liste.push(f)
+      m.set(reste, liste)
+    }
+    return [...m.entries()].sort((a, b) => (a[0] === '' ? -1 : b[0] === '' ? 1 : b[1].length - a[1].length))
+  }
 
   const cle = (zone: string, categorie: string) => `${zone}|${categorie}`
   const retenues = useMemo(() => {
     const liste: { chemin: string; dossier: string }[] = []
     for (const g of groupes)
-      for (const [categorie, fiches] of g.categories)
-        if (!decoches.has(cle(g.zone.nom, categorie)))
-          for (const f of fiches) liste.push({ chemin: f.chemin, dossier: categorie })
+      for (const [racine, fiches] of g.categories)
+        if (!decoches.has(cle(g.zone.nom, racine)))
+          for (const f of fiches) liste.push({ chemin: f.chemin, dossier: f.categorie })
     return liste
   }, [groupes, decoches])
 
@@ -118,7 +138,7 @@ export default function App() {
     setErreur(null)
     try {
       const noms = zones.flatMap((z) => z.fichiers.map((f) => f.nom))
-      const table = await invoke<Record<string, string>>('plan_ia', { fichiers: noms, modele })
+      const table = await invoke<Record<string, string>>('plan_ia', { fichiers: noms, modele, consignes })
       let changes = 0
       setZones((zs) =>
         zs
@@ -323,16 +343,28 @@ export default function App() {
                         <strong>{categorie}</strong>
                         <span className="mono compte">{fiches.length.toLocaleString('fr-FR')}</span>
                       </summary>
-                      <ul className="fichiers">
-                        {fiches.map((f) => (
-                          <li key={f.chemin}>
-                            <span className="nom">{f.nom}</span>
-                            <span className="mono meta">
-                              {octets(f.taille)} · {dateFr(f.modifie)}
-                            </span>
-                          </li>
+                      <div className="detail-groupe">
+                        {sousGroupes(fiches).map(([chemin, liste]) => (
+                          <div key={chemin || '(racine)'}>
+                            {chemin !== '' && (
+                              <div className="sous-chemin">
+                                {chemin}
+                                <span className="mono compte">{liste.length}</span>
+                              </div>
+                            )}
+                            <ul className="fichiers">
+                              {liste.map((f) => (
+                                <li key={f.chemin}>
+                                  <span className="nom">{f.nom}</span>
+                                  <span className="mono meta">
+                                    {octets(f.taille)} · {dateFr(f.modifie)}
+                                  </span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
                         ))}
-                      </ul>
+                      </div>
                     </details>
                   )
                 })}
@@ -416,6 +448,20 @@ export default function App() {
                 </button>
               </div>
             )}
+            <h3>Ta méthode de rangement</h3>
+            <p className="gris">
+              Explique à Filou comment tu ranges, il en tiendra compte à chaque affinage
+              par l'IA. Exemples : « les factures par année », « les captures d'écran par
+              mois », « un dossier par projet, mes projets s'appellent Filou, Médor et
+              Lexadev », « tout ce qui est vieux de plus d'un an dans Archives ».
+            </p>
+            <textarea
+              className="consignes"
+              rows={4}
+              placeholder="Tes consignes de rangement…"
+              value={consignes}
+              onChange={(e) => changerConsignes(e.target.value)}
+            />
             <label className="ligne-reglage">
               Modèle pour l'affinage
               <select value={modele} onChange={(e) => changerModele(e.target.value)}>

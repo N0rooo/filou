@@ -255,9 +255,15 @@ async fn plan_ia(
     app: tauri::AppHandle,
     fichiers: Vec<String>,
     modele: Option<String>,
+    consignes: Option<String>,
 ) -> Result<HashMap<String, String>, String> {
     tauri::async_runtime::spawn_blocking(move || {
-        plan_ia_bloquant(&app, fichiers, modele.unwrap_or_default())
+        plan_ia_bloquant(
+            &app,
+            fichiers,
+            modele.unwrap_or_default(),
+            consignes.unwrap_or_default(),
+        )
     })
     .await
     .map_err(|e| e.to_string())?
@@ -376,6 +382,7 @@ fn plan_ia_bloquant(
     app: &tauri::AppHandle,
     fichiers: Vec<String>,
     modele: String,
+    consignes: String,
 ) -> Result<HashMap<String, String>, String> {
     use std::sync::atomic::{AtomicUsize, Ordering};
 
@@ -400,7 +407,7 @@ fn plan_ia_bloquant(
                 loop {
                     let i = indice.fetch_add(1, Ordering::Relaxed);
                     let Some(lot) = lots.get(i) else { break };
-                    miens.push(classer_lot(&auth, &modele, lot));
+                    miens.push(classer_lot(&auth, &modele, &consignes, lot));
                     let f = fait.fetch_add(1, Ordering::Relaxed) + 1;
                     emettre_progres(app, f, total);
                 }
@@ -430,18 +437,30 @@ fn plan_ia_bloquant(
 fn classer_lot(
     auth: &AuthIa,
     modele: &str,
+    consignes: &str,
     lot: &[String],
 ) -> Result<HashMap<String, String>, String> {
     let liste = lot.iter().map(|n| format!("- {n}")).collect::<Vec<_>>().join("\n");
+    let bloc_consignes = if consignes.trim().is_empty() {
+        String::new()
+    } else {
+        format!(
+            "\n\nCONSIGNES DE L'UTILISATEUR (elles priment sur tout le reste) : {}\n",
+            consignes.trim()
+        )
+    };
     let prompt = format!(
         "Tu ranges les fichiers en vrac du Bureau et des Téléchargements d'un utilisateur \
          français. Pour chaque nom de fichier ci-dessous, propose un dossier de rangement \
-         court en français, éventuellement avec un sous-dossier (« Dossier » ou \
-         « Dossier/Sous-dossier », deux niveaux maximum). Regroupe fortement et tiens-toi \
-         aux racines suggérées : Captures d'écran, Images, Documents, Factures, \
-         Installeurs, Archives, Code, Vidéos, Audio, Divers — n'en crée d'autres que si \
-         un vrai thème le mérite (un projet reconnaissable, par exemple). Réponds \
-         UNIQUEMENT par un tableau JSON, sans aucun texte autour : \
+         en français avec une VRAIE arborescence détaillée quand elle a du sens : \
+         « Dossier », « Dossier/Sous-dossier » ou « Dossier/Sous-dossier/Sous-sous-dossier » \
+         (trois niveaux maximum). Exemples : « Factures/2026 », « Projets/Filou/Maquettes », \
+         « Captures d'écran/2026-09 », « Administratif/Impôts ». Détecte les projets et les \
+         thèmes récurrents d'après les noms (dates, mots communs, préfixes) et regroupe-les \
+         sous une même racine. Racines de base : Captures d'écran, Images, Documents, \
+         Factures, Administratif, Projets, Installeurs, Archives, Code, Vidéos, Audio, \
+         Divers — crée d'autres racines seulement si un vrai thème le mérite.{bloc_consignes}\
+         \nRéponds UNIQUEMENT par un tableau JSON, sans aucun texte autour : \
          [{{\"fichier\": \"nom exact\", \"dossier\": \"…\"}}]\n\n{liste}"
     );
     let reponse = match auth {
@@ -465,13 +484,13 @@ fn classer_lot(
 }
 
 /// Garde-fou sur les chemins proposés (par l'IA ou le frontend) : pas de
-/// remontée « .. », pas d'absolu, deux niveaux maximum.
+/// remontée « .. », pas d'absolu, trois niveaux maximum.
 fn nettoyer_dossier(dossier: &str) -> String {
     let propre: Vec<&str> = dossier
         .split('/')
         .map(|s| s.trim())
         .filter(|s| !s.is_empty() && *s != "." && *s != "..")
-        .take(2)
+        .take(3)
         .collect();
     if propre.is_empty() {
         "Divers".into()

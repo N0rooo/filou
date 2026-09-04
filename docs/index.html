@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Filou, le chien qui range tes fichiers</title>
+  <meta name="description" content="Filou analyse le Bureau et les Téléchargements, propose un plan de dossiers, tu décoches ce que tu veux, il range. Tout est annulable. App Mac gratuite.">
+  <link rel="icon" type="image/png" href="favicon.png">
+  <meta property="og:title" content="Filou, le chien qui range tes fichiers">
+  <meta property="og:description" content="Ton Bureau redevient un bureau.">
+  <meta property="og:image" content="https://n0rooo.github.io/filou/filou.svg">
+  <style>
+    :root {
+      --fond: #faf4ea;
+      --panneau: #ffffff;
+      --brun: #43362e;
+      --roux: #d9652f;
+      --roux-fonce: #b84f1f;
+      --roux-doux: #f9e8da;
+      --sable: #ecdfcc;
+      --taupe: #8c7d70;
+      --feuille: #4a7c59;
+      --affiche: 'Avenir Next', Avenir, 'Helvetica Neue', Helvetica, sans-serif;
+      --mono: ui-monospace, 'SF Mono', Menlo, monospace;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    ::selection { background: var(--roux); color: #fff; }
+    body {
+      margin: 0; font-family: var(--affiche); font-size: 16px;
+      color: var(--brun); background: var(--fond);
+      background-image: radial-gradient(#e9dcc6 1px, transparent 1.3px);
+      background-size: 26px 26px;
+      -webkit-font-smoothing: antialiased; line-height: 1.55;
+      overflow-x: clip;
+    }
+    .contenu { max-width: 980px; margin: 0 auto; padding: 0 24px; }
+
+    header.site { display: flex; align-items: center; gap: 12px; padding: 20px 0; }
+    header.site img { width: 40px; height: 40px; border-radius: 12px; }
+    header.site .nom { font-size: 24px; font-weight: 800; letter-spacing: -0.02em; }
+    header.site nav { margin-left: auto; display: flex; gap: 18px; }
+    header.site a { color: var(--taupe); text-decoration: none; font-size: 14.5px; font-weight: 600; }
+    header.site a:hover { color: var(--roux-fonce); }
+
+    .heros { text-align: center; padding: 56px 0 30px; }
+    .heros img.mascotte { width: 148px; height: 148px; border-radius: 34px; box-shadow: 0 24px 60px rgba(67, 54, 46, 0.25); }
+    .heros h1 {
+      font-size: clamp(34px, 6vw, 54px); font-weight: 800; letter-spacing: -0.02em;
+      margin: 26px 0 14px; line-height: 1.1;
+    }
+    .heros .sous { color: var(--taupe); font-size: 18px; max-width: 640px; margin: 0 auto 30px; }
+    .cta { display: flex; gap: 14px; justify-content: center; align-items: center; flex-wrap: wrap; }
+    .bouton {
+      display: inline-block; text-decoration: none; font-weight: 700;
+      border-radius: 999px; padding: 15px 30px; font-size: 17px;
+      background: var(--roux); color: #fff;
+      box-shadow: 0 12px 28px rgba(217, 101, 47, 0.35);
+      transition: transform 0.12s ease, background 0.12s ease;
+    }
+    .bouton:hover { transform: translateY(-2px); background: var(--roux-fonce); }
+    .bouton.discret { background: transparent; color: var(--roux-fonce); box-shadow: none; font-size: 15px; }
+    .precision { color: var(--taupe); font-size: 13px; margin-top: 14px; font-family: var(--mono); }
+
+    /* maquette de l'app */
+    .demo {
+      max-width: 620px; margin: 44px auto 0; text-align: left;
+      background: var(--panneau); border: 1.5px solid var(--sable); border-radius: 22px;
+      box-shadow: 0 24px 60px rgba(67, 54, 46, 0.16); overflow: hidden;
+      transform: rotate(0.6deg);
+    }
+    .demo .barre { display: flex; gap: 6px; padding: 12px 14px; border-bottom: 1.5px solid var(--sable); }
+    .demo .rond { width: 11px; height: 11px; border-radius: 50%; }
+    .demo .corps { padding: 18px 20px 22px; }
+    .demo .gros-bouton {
+      display: inline-block; background: var(--roux); color: #fff; font-weight: 700;
+      border-radius: 999px; padding: 11px 22px; font-size: 15px; margin-bottom: 16px;
+    }
+    .demo .ligne {
+      display: flex; align-items: center; gap: 10px; padding: 8px 4px;
+      border-top: 1.5px dashed var(--sable); font-size: 14px; font-weight: 600;
+    }
+    .demo .coche {
+      width: 15px; height: 15px; border-radius: 4px; background: var(--roux);
+      position: relative; flex: none;
+    }
+    .demo .coche::after {
+      content: ''; position: absolute; left: 4px; top: 1px; width: 4px; height: 8px;
+      border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg);
+    }
+    .demo .nb {
+      margin-left: auto; font-size: 12px; font-weight: 700; color: var(--roux-fonce);
+      background: var(--roux-doux); border-radius: 999px; padding: 2px 10px;
+    }
+
+    .punch {
+      text-align: center; padding: 34px 26px; font-size: clamp(22px, 3.4vw, 30px);
+      font-weight: 800; max-width: 620px; margin: 56px auto 8px;
+      background: var(--panneau); border: 2px dashed var(--sable); border-radius: 22px;
+      transform: rotate(-0.5deg);
+    }
+    .punch .doux { color: var(--taupe); }
+
+    .tete-section { text-align: center; margin-top: 60px; }
+    .surtitre {
+      display: inline-block; font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase;
+      color: var(--roux-fonce); background: var(--roux-doux);
+      border-radius: 999px; padding: 6px 16px; font-weight: 800;
+    }
+    .grille {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 18px; padding: 26px 0 10px;
+    }
+    .carte {
+      background: var(--panneau); border: 1.5px solid var(--sable); border-radius: 22px;
+      padding: 24px 22px; transition: transform 0.16s ease, box-shadow 0.16s ease;
+    }
+    .carte:hover { transform: translateY(-4px); box-shadow: 0 14px 30px rgba(67, 54, 46, 0.12); }
+    .carte h3 { font-size: 19px; font-weight: 800; margin: 0 0 6px; }
+    .carte p { color: var(--taupe); font-size: 14.5px; margin: 0; }
+
+    .etapes { margin-top: 26px; }
+    .etapes h2, h2.section {
+      text-align: center; font-size: clamp(24px, 4vw, 34px); font-weight: 800; margin: 14px 0 26px;
+    }
+    .pas { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+    .pas .un { background: var(--panneau); border: 1.5px solid var(--sable); border-radius: 22px; padding: 24px 22px; }
+    .pas .num {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 38px; height: 38px; border-radius: 50%; border: 2px dashed var(--roux);
+      color: var(--roux-fonce); font-weight: 800; margin-bottom: 10px;
+    }
+    .pas h3 { margin: 0 0 6px; font-size: 17px; font-weight: 800; }
+    .pas p { color: var(--taupe); font-size: 14.5px; margin: 0; }
+
+    section.privee {
+      margin: 64px 0 0; border-radius: 22px; padding: 44px 40px;
+      background: var(--brun); color: #f4ede3;
+    }
+    section.privee h2 { font-size: clamp(22px, 3.4vw, 30px); font-weight: 800; margin: 0 0 12px; }
+    section.privee p { color: #cfc4b6; font-size: 15.5px; max-width: 700px; }
+    section.privee strong { color: #fff; }
+
+    .famille { text-align: center; margin: 60px 0 0; }
+    .famille p { color: var(--taupe); }
+    .famille a { color: var(--roux-fonce); font-weight: 700; text-decoration: none; }
+    footer { text-align: center; color: var(--taupe); font-size: 13.5px; padding: 40px 0 30px; }
+    footer a { color: var(--roux-fonce); text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="contenu">
+    <header class="site">
+      <img src="filou.svg" alt="Filou">
+      <span class="nom">Filou</span>
+      <nav>
+        <a href="#fonctions">Ce qu'il fait</a>
+        <a href="https://github.com/N0rooo/filou">GitHub</a>
+      </nav>
+    </header>
+
+    <section class="heros">
+      <img class="mascotte" src="filou.svg" alt="Filou, le chien qui range tes fichiers">
+      <h1>Il range tes fichiers,<br>l'air de rien</h1>
+      <p class="sous">Le Bureau qui déborde de captures d'écran, les Téléchargements pleins
+      d'installeurs et de PDF : Filou analyse tout, propose un plan de dossiers, tu décoches
+      ce que tu veux épargner, il range. Et tout s'annule.</p>
+      <div class="cta">
+        <a class="bouton" href="https://github.com/N0rooo/filou">Voir sur GitHub</a>
+      </div>
+      <p class="precision">App Mac gratuite, version signée à télécharger bientôt</p>
+
+      <div class="demo" aria-hidden="true">
+        <div class="barre">
+          <span class="rond" style="background:#f26b5e"></span>
+          <span class="rond" style="background:#f5bf4f"></span>
+          <span class="rond" style="background:#5fc26d"></span>
+        </div>
+        <div class="corps">
+          <span class="gros-bouton">Ranger 143 fichiers</span>
+          <div class="ligne"><span class="coche"></span> Captures d'écran <span class="nb">87</span></div>
+          <div class="ligne"><span class="coche"></span> Installeurs <span class="nb">12</span></div>
+          <div class="ligne"><span class="coche"></span> Documents <span class="nb">28</span></div>
+          <div class="ligne"><span class="coche"></span> Projets / Lexadev <span class="nb">16</span></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="punch">Ton Bureau redevient un bureau.<br><span class="doux">Tes Téléchargements, un simple couloir.</span></div>
+
+    <div class="tete-section" id="fonctions"><span class="surtitre">Ce qu'il fait</span></div>
+    <section class="grille">
+      <div class="carte">
+        <h3>Un plan avant de ranger</h3>
+        <p>Filou montre d'abord ce qu'il compte faire : des catégories claires avec le détail
+        des fichiers. Tu décoches ce que tu veux laisser tranquille, puis il déplace.</p>
+      </div>
+      <div class="carte">
+        <h3>Une IA qui comprend tes fichiers</h3>
+        <p>Claude regroupe par vrais thèmes : les factures ensemble, un dossier par projet,
+        des arborescences propres. Seuls les noms de fichiers lui sont envoyés, jamais le contenu.</p>
+      </div>
+      <div class="carte">
+        <h3>Ta méthode, tes règles</h3>
+        <p>Tu écris tes habitudes en français libre, elles priment sur tout. Et tu choisis le
+        niveau de détail : Simple, Équilibré ou Maniaque.</p>
+      </div>
+      <div class="carte">
+        <h3>Tout s'annule</h3>
+        <p>Chaque rangement est consigné au journal. Un clic remet les fichiers à leur place
+        et efface les dossiers créés devenus vides.</p>
+      </div>
+      <div class="carte">
+        <h3>Rien ne sort de ta machine</h3>
+        <p>Pas de serveur, pas de compte, pas de télémétrie. L'IA passe par ton abonnement
+        Claude ou ta clé, stockée dans le trousseau du système.</p>
+      </div>
+      <div class="carte">
+        <h3>Un chien de la famille</h3>
+        <p>Médor range ta boîte mail, Flash trie tes photos, Filou s'occupe de tes fichiers.
+        Même philosophie : tout local, tout annulable.</p>
+      </div>
+    </section>
+
+    <section class="etapes">
+      <div class="tete-section"><span class="surtitre">Mode d'emploi</span></div>
+      <h2>Trois gestes, un bureau propre</h2>
+      <div class="pas">
+        <div class="un"><span class="num">1</span><h3>Filou renifle</h3><p>Il inventorie les fichiers en vrac du Bureau et des Téléchargements, sans toucher aux dossiers existants.</p></div>
+        <div class="un"><span class="num">2</span><h3>Tu décoches</h3><p>Le plan s'affiche par catégories. Ce qui est coché sera rangé, le reste ne bouge pas.</p></div>
+        <div class="un"><span class="num">3</span><h3>Il range</h3><p>Les dossiers se créent, les fichiers glissent dedans, le journal garde la trace. Regret ? Tout s'annule.</p></div>
+      </div>
+    </section>
+
+    <section class="privee">
+      <h2>La vie privée, c'est pas un bonus</h2>
+      <p>Filou ne lit que les <strong>noms</strong> de tes fichiers, jamais leur contenu. Si tu
+      actives l'IA, seuls ces noms transitent vers Claude, avec ton propre compte. Sans IA,
+      un classement local s'applique et rien ne quitte ta machine.</p>
+    </section>
+
+    <div class="famille">
+      <p>La famille : <a href="https://n0rooo.github.io/medor/">Médor</a> range ta boîte mail ·
+      <a href="https://n0rooo.github.io/flash/">Flash</a> rapporte tes photos dans l'ordre</p>
+    </div>
+
+    <footer>
+      Fait avec des croquettes par <a href="https://github.com/N0rooo">Thomas Aubert</a> ·
+      <a href="https://github.com/N0rooo/filou">Code source</a>
+    </footer>
+  </div>
+</body>
+</html>

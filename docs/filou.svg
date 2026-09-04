@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="fond" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4a3327"/>
+      <stop offset="1" stop-color="#2c1e15"/>
+    </linearGradient>
+    <radialGradient id="tete" cx="0.42" cy="0.3" r="0.85">
+      <stop offset="0" stop-color="#ee8449"/>
+      <stop offset="0.7" stop-color="#d05a24"/>
+      <stop offset="1" stop-color="#bd4d1e"/>
+    </radialGradient>
+    <linearGradient id="oreille" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#a8461a"/>
+      <stop offset="1" stop-color="#8c3810"/>
+    </linearGradient>
+    <linearGradient id="museau" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fdf8ec"/>
+      <stop offset="1" stop-color="#efdfc4"/>
+    </linearGradient>
+    <linearGradient id="bandana" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#559068"/>
+      <stop offset="1" stop-color="#3c6a4b"/>
+    </linearGradient>
+    <radialGradient id="vignette" cx="0.45" cy="0.35" r="0.75">
+      <stop offset="0.6" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#1d1008" stop-opacity="0.32"/>
+    </radialGradient>
+    <clipPath id="cadre">
+      <rect x="20" y="20" width="984" height="984" rx="224"/>
+    </clipPath>
+  </defs>
+
+  <rect x="20" y="20" width="984" height="984" rx="224" fill="url(#fond)"/>
+
+  <g clip-path="url(#cadre)">
+    <g transform="translate(512 600) scale(1.1) translate(-512 -610) rotate(-4 512 590)">
+      <!-- oreilles tombantes, coupées par le cadre -->
+      <path d="M 300 300 C 160 280 90 420 100 620 C 108 780 170 870 260 860 C 340 850 360 720 358 600 C 356 460 350 340 300 300 Z" fill="url(#oreille)"/>
+      <g transform="translate(1024 0) scale(-1 1)">
+        <path d="M 300 300 C 160 280 90 420 100 620 C 108 780 170 870 260 860 C 340 850 360 720 358 600 C 356 460 350 340 300 300 Z" fill="url(#oreille)"/>
+      </g>
+
+      <!-- corps et bandana, DERRIÈRE la tête : autour du cou -->
+      <ellipse cx="512" cy="1150" rx="540" ry="280" fill="url(#tete)"/>
+      <path d="M 140 856 C 320 800 704 800 884 856 L 884 916 C 704 860 320 860 140 916 Z" fill="url(#bandana)"/>
+      <path d="M 356 880 L 668 880 L 512 1030 Z" fill="url(#bandana)"/>
+      <path d="M 512 880 L 668 880 L 512 1030 Z" fill="#33593f"/>
+
+      <!-- houppette -->
+      <path d="M 450 320 Q 462 230 508 200 Q 506 250 525 300 Q 555 240 585 225 Q 570 280 575 325 Z" fill="#d05a24"/>
+
+      <!-- tête énorme -->
+      <ellipse cx="512" cy="590" rx="350" ry="320" fill="url(#tete)"/>
+
+      <!-- tache de filou -->
+      <circle cx="400" cy="520" r="98" fill="#b3511f"/>
+
+      <!-- museau -->
+      <ellipse cx="512" cy="750" rx="230" ry="165" fill="url(#museau)"/>
+
+      <!-- taches de rousseur -->
+      <circle cx="395" cy="760" r="7" fill="#d9b285"/>
+      <circle cx="370" cy="726" r="7" fill="#d9b285"/>
+      <circle cx="422" cy="731" r="7" fill="#d9b285"/>
+      <circle cx="629" cy="760" r="7" fill="#d9b285"/>
+      <circle cx="654" cy="726" r="7" fill="#d9b285"/>
+      <circle cx="602" cy="731" r="7" fill="#d9b285"/>
+
+      <!-- truffe -->
+      <path d="M 512 745 C 478 738 452 718 452 692 C 452 664 478 650 512 650 C 546 650 572 664 572 692 C 572 718 546 738 512 745 Z" fill="#3a2a20"/>
+      <ellipse cx="492" cy="672" rx="16" ry="10" fill="#5c4636"/>
+
+      <!-- sourire en coin -->
+      <path d="M 512 750 Q 516 800 570 805" fill="none" stroke="#3a2a20" stroke-width="22" stroke-linecap="round"/>
+
+      <!-- œil ouvert dans la tache -->
+      <circle cx="400" cy="525" r="40" fill="#3a2a20"/>
+      <circle cx="414" cy="511" r="13" fill="#fdf8ec"/>
+
+      <!-- clin d'œil et sourcil levé -->
+      <path d="M 590 530 Q 655 480 720 530" fill="none" stroke="#3a2a20" stroke-width="30" stroke-linecap="round"/>
+      <path d="M 600 428 Q 660 402 722 428" fill="none" stroke="#43362e" stroke-width="22" stroke-linecap="round"/>
+
+    </g>
+
+    <rect x="20" y="20" width="984" height="984" fill="url(#vignette)"/>
+  </g>
+</svg>

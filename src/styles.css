@@ -34,21 +34,9 @@ body {
 
 .contenu { max-width: 860px; margin: 0 auto; padding: 0 24px 60px; }
 
-/* ------------------------------------------------------------- le museau */
+/* --------------------------------------------------------------- le logo */
 header { display: flex; align-items: center; gap: 14px; padding: 26px 0 14px; }
-.museau {
-  position: relative; width: 44px; height: 40px;
-  background: var(--roux); border-radius: 12px 12px 18px 18px;
-  margin-top: 6px;
-}
-.museau::before,
-.museau::after {
-  content: ''; position: absolute; top: -9px;
-  border-left: 10px solid transparent; border-right: 10px solid transparent;
-  border-bottom: 14px solid var(--roux-fonce);
-}
-.museau::before { left: 2px; transform: rotate(-14deg); }
-.museau::after { right: 2px; transform: rotate(14deg); }
+.logo { width: 52px; height: 56px; }
 header h1 {
   font-size: 34px; font-weight: 800; letter-spacing: -0.02em;
   margin: 0; text-transform: lowercase;

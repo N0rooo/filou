@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { invoke } from '@tauri-apps/api/core'
+import logo from './assets/filou.svg'
 import './styles.css'
 
 type Fiche = { nom: string; chemin: string; taille: number; modifie: number; categorie: string }
@@ -157,7 +158,7 @@ export default function App() {
     <div className="page">
       <div className="contenu">
         <header>
-          <span className="museau" aria-hidden="true" />
+          <img className="logo" src={logo} alt="" />
           <h1>filou</h1>
           <span className="tagline">il range tes fichiers, l'air de rien</span>
         </header>

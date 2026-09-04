@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="200 130 624 680">
+  <defs>
+    <linearGradient id="fond" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fbf4e5"/>
+      <stop offset="1" stop-color="#f0dfc0"/>
+    </linearGradient>
+    <linearGradient id="roux" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#e2743d"/>
+      <stop offset="1" stop-color="#cd5622"/>
+    </linearGradient>
+    <linearGradient id="rouxFonce" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#b04a1c"/>
+      <stop offset="1" stop-color="#9c3f14"/>
+    </linearGradient>
+  </defs>
+
+  <!-- le chien, tête légèrement penchée : l'air de rien -->
+  <g transform="rotate(-5 512 545)">
+    <!-- tête -->
+    <ellipse cx="512" cy="545" rx="235" ry="215" fill="url(#roux)"/>
+
+    <!-- tache de filou sur l'œil gauche -->
+    <circle cx="428" cy="498" r="62" fill="url(#rouxFonce)"/>
+
+    <!-- oreilles tombantes -->
+    <path d="M 354 372 C 282 355 234 430 240 540 C 244 630 278 682 330 678 C 378 674 396 600 398 522 C 400 455 390 398 354 372 Z" fill="url(#rouxFonce)"/>
+    <path d="M 670 372 C 742 355 790 430 784 540 C 780 630 746 682 694 678 C 646 674 628 600 626 522 C 624 455 634 398 670 372 Z" fill="url(#rouxFonce)"/>
+
+    <!-- museau crème -->
+    <ellipse cx="512" cy="648" rx="152" ry="108" fill="#faf3e6"/>
+
+    <!-- truffe -->
+    <path d="M 512 650 C 490 645 474 632 474 616 C 474 598 490 589 512 589 C 534 589 550 598 550 616 C 550 632 534 645 512 650 Z" fill="#43362e"/>
+
+    <!-- sourire en coin -->
+    <path d="M 512 654 Q 514 686 550 688" fill="none" stroke="#43362e" stroke-width="16" stroke-linecap="round"/>
+
+    <!-- œil ouvert dans la tache, œil droit qui cligne -->
+    <circle cx="428" cy="500" r="27" fill="#43362e"/>
+    <circle cx="437" cy="491" r="9" fill="#faf3e6"/>
+    <path d="M 536 505 Q 570 478 604 505" fill="none" stroke="#43362e" stroke-width="20" stroke-linecap="round"/>
+  </g>
+</svg>

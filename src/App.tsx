@@ -168,7 +168,7 @@ export default function App() {
       <div className="contenu">
         <header>
           <img className="logo" src={logo} alt="" />
-          <h1>filou</h1>
+          <h1>Filou</h1>
           <span className="tagline">il range tes fichiers, l'air de rien</span>
           <button className="petit-bouton coin" onClick={() => setReglages(true)}>
             Réglages

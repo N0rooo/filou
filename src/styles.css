@@ -1,17 +1,20 @@
-/* Filou — même famille visuelle que Médor : encre sur papier, serif Iowan,
-   liseret de courrier par avion. */
+/* Filou — identité propre : un renard roux sur papier crème, tout en rondeurs.
+   Rien à voir avec le courrier par avion de Médor. */
 
 :root {
-  --encre: #1d2a3a;
-  --papier: #f1f2ef;
-  --carte: #ffffff;
-  --bleu: #27519f;
-  --rouge: #c34a3e;
-  --vert: #2e7d5b;
-  --gris: #75808b;
-  --ligne: #dfe3e0;
-  --titre: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
-  --texte: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --fond: #faf4ea;
+  --panneau: #ffffff;
+  --brun: #43362e;
+  --roux: #d9652f;
+  --roux-fonce: #b84f1f;
+  --roux-doux: #f9e8da;
+  --sable: #ecdfcc;
+  --taupe: #8c7d70;
+  --feuille: #4a7c59;
+  --feuille-douce: #e4efe7;
+  --alerte: #b3402e;
+  --alerte-douce: #f7e2dd;
+  --affiche: 'Avenir Next', Avenir, 'Helvetica Neue', Helvetica, sans-serif;
   --mono: ui-monospace, 'SF Mono', Menlo, monospace;
 }
 
@@ -19,113 +22,139 @@
 
 body {
   margin: 0;
-  font-family: var(--texte);
+  font-family: var(--affiche);
   font-size: 15px;
-  color: var(--encre);
-  background: var(--papier);
+  color: var(--brun);
+  background: var(--fond);
+  background-image: radial-gradient(#e9dcc6 1px, transparent 1.3px);
+  background-size: 26px 26px;
   -webkit-font-smoothing: antialiased;
   line-height: 1.5;
 }
 
-.liseret {
-  height: 6px;
-  background: repeating-linear-gradient(-45deg,
-    var(--bleu) 0 16px, var(--carte) 16px 25px,
-    var(--rouge) 25px 41px, var(--carte) 41px 50px);
-}
-
 .contenu { max-width: 860px; margin: 0 auto; padding: 0 24px 60px; }
 
-header { display: flex; align-items: baseline; gap: 12px; padding: 22px 0 10px; }
-header h1 { font-family: var(--titre); font-size: 30px; margin: 0; }
-.tagline { color: var(--gris); font-size: 14px; }
+/* ------------------------------------------------------------- le museau */
+header { display: flex; align-items: center; gap: 14px; padding: 26px 0 14px; }
+.museau {
+  position: relative; width: 44px; height: 40px;
+  background: var(--roux); border-radius: 12px 12px 18px 18px;
+  margin-top: 6px;
+}
+.museau::before,
+.museau::after {
+  content: ''; position: absolute; top: -9px;
+  border-left: 10px solid transparent; border-right: 10px solid transparent;
+  border-bottom: 14px solid var(--roux-fonce);
+}
+.museau::before { left: 2px; transform: rotate(-14deg); }
+.museau::after { right: 2px; transform: rotate(14deg); }
+header h1 {
+  font-size: 34px; font-weight: 800; letter-spacing: -0.02em;
+  margin: 0; text-transform: lowercase;
+}
+.tagline { color: var(--taupe); font-size: 14.5px; font-style: italic; }
 
 .mono { font-family: var(--mono); }
-.gris { color: var(--gris); }
+.gris { color: var(--taupe); }
 
-.statut {
-  background: #e8eef9; color: var(--bleu);
-  border-radius: 10px; padding: 10px 16px; margin: 12px 0; font-size: 14px;
+/* ------------------------------------------------------------- bandeaux */
+.statut, .erreur, .note {
+  border-radius: 999px; padding: 10px 20px; margin: 12px 0; font-size: 14px;
+  font-weight: 600; display: inline-block;
 }
-.erreur {
-  background: #f9e9e7; color: var(--rouge);
-  border-radius: 10px; padding: 10px 16px; margin: 12px 0; font-size: 14px;
-}
-.note {
-  background: #e7f2ed; color: var(--vert);
-  border-radius: 10px; padding: 10px 16px; margin: 12px 0; font-size: 14px;
-}
+.statut { background: var(--roux-doux); color: var(--roux-fonce); }
+.erreur { background: var(--alerte-douce); color: var(--alerte); }
+.note { background: var(--feuille-douce); color: var(--feuille); }
 
+/* -------------------------------------------------------------- boutons */
 .actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin: 16px 0; }
 
 .gros-bouton {
-  font-family: var(--texte); font-weight: 700; font-size: 16px;
-  background: var(--encre); color: #fff; border: none; border-radius: 12px;
-  padding: 13px 26px; cursor: pointer;
-  box-shadow: 0 8px 20px rgba(29, 42, 58, 0.22);
-  transition: transform 0.12s ease;
+  font-family: var(--affiche); font-weight: 700; font-size: 16px;
+  background: var(--roux); color: #fff; border: none; border-radius: 999px;
+  padding: 14px 30px; cursor: pointer;
+  box-shadow: 0 10px 24px rgba(217, 101, 47, 0.35);
+  transition: transform 0.12s ease, background 0.12s ease;
 }
-.gros-bouton:hover:not(:disabled) { transform: translateY(-1px); }
+.gros-bouton:hover:not(:disabled) { transform: translateY(-2px); background: var(--roux-fonce); }
 
 .petit-bouton {
-  font-family: var(--texte); font-weight: 600; font-size: 13.5px;
-  background: var(--carte); color: var(--encre);
-  border: 1px solid var(--ligne); border-radius: 10px;
-  padding: 9px 16px; cursor: pointer;
+  font-family: var(--affiche); font-weight: 600; font-size: 13.5px;
+  background: var(--panneau); color: var(--brun);
+  border: 1.5px solid var(--sable); border-radius: 999px;
+  padding: 9px 18px; cursor: pointer;
+  transition: border-color 0.12s ease;
 }
-.petit-bouton:hover:not(:disabled) { border-color: var(--gris); }
+.petit-bouton:hover:not(:disabled) { border-color: var(--roux); color: var(--roux-fonce); }
 
 button:disabled { opacity: 0.45; cursor: default; }
 
+/* --------------------------------------------------------------- cartes */
 .carte {
-  background: var(--carte); border: 1px solid var(--ligne); border-radius: 14px;
-  padding: 18px 20px; margin: 14px 0;
+  background: var(--panneau); border: 1.5px solid var(--sable); border-radius: 22px;
+  padding: 20px 22px; margin: 16px 0;
+  box-shadow: 0 6px 18px rgba(67, 54, 46, 0.05);
 }
 .carte h2 {
-  font-family: var(--titre); font-size: 19px; margin: 0 0 10px;
+  font-size: 19px; font-weight: 700; margin: 0 0 10px;
   display: flex; align-items: baseline; gap: 10px;
 }
-.carte h2 .compte { font-weight: 400; }
-.compte { color: var(--gris); font-size: 12.5px; }
+.compte {
+  color: var(--roux-fonce); background: var(--roux-doux);
+  font-size: 12px; font-weight: 700;
+  border-radius: 999px; padding: 2px 10px;
+}
+.carte h2 .compte { font-weight: 600; }
 
-.carte.bilan { border-left: 4px solid var(--vert); }
+.carte.bilan { border-color: var(--feuille); }
 .carte.bilan ul, .modale ul, .entree ul { margin: 6px 0; padding-left: 20px; }
-.carte.vide { text-align: center; padding: 34px 20px; }
+.carte.vide { text-align: center; padding: 38px 20px; }
 .carte.vide h2 { justify-content: center; }
 
-.groupe { border-top: 1px solid var(--ligne); }
+/* ----------------------------------------------------------- accordéons */
+.groupe { border-top: 1.5px dashed var(--sable); }
 .groupe summary {
   display: flex; align-items: center; gap: 10px;
-  padding: 9px 4px; cursor: pointer; user-select: none; list-style: none;
+  padding: 10px 8px; cursor: pointer; user-select: none; list-style: none;
+  border-radius: 12px;
 }
+.groupe summary:hover { background: var(--fond); }
 .groupe summary::-webkit-details-marker { display: none; }
-.groupe summary::after { content: '▸'; margin-left: auto; color: var(--gris); font-size: 12px; }
-.groupe[open] summary::after { content: '▾'; }
-.groupe input[type='checkbox'] { accent-color: var(--bleu); width: 15px; height: 15px; }
+.groupe summary::after {
+  content: ''; margin-left: auto;
+  border-left: 6px solid var(--roux); border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent; transition: transform 0.12s ease;
+}
+.groupe[open] summary::after { transform: rotate(90deg); }
+.groupe summary .compte { margin-left: 2px; }
+.groupe input[type='checkbox'] { accent-color: var(--roux); width: 16px; height: 16px; }
 
-.fichiers { list-style: none; margin: 0 0 10px; padding: 0 4px 0 29px; }
+.fichiers { list-style: none; margin: 0 0 10px; padding: 0 8px 0 34px; }
 .fichiers li {
   display: flex; align-items: baseline; gap: 12px;
   padding: 3px 0; font-size: 13.5px;
 }
 .fichiers .nom { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.fichiers .meta, .entree .meta { color: var(--gris); font-size: 12px; margin-left: auto; white-space: nowrap; }
+.fichiers .meta, .entree .meta { color: var(--taupe); font-size: 12px; margin-left: auto; white-space: nowrap; }
 .entree .meta { margin-left: 0; }
 
-.entree { border-top: 1px solid var(--ligne); padding: 9px 0; }
+/* --------------------------------------------------------------- journal */
+.entree { border-top: 1.5px dashed var(--sable); padding: 10px 0; }
 .entree:first-of-type { border-top: none; }
 .ligne-entree { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .ligne-entree .petit-bouton { margin-left: auto; }
-.entree details summary { cursor: pointer; color: var(--gris); font-size: 13px; margin-top: 4px; }
+.entree details summary { cursor: pointer; color: var(--taupe); font-size: 13px; margin-top: 4px; }
 
+/* ---------------------------------------------------------------- modale */
 .voile {
-  position: fixed; inset: 0; background: rgba(29, 42, 58, 0.45);
+  position: fixed; inset: 0; background: rgba(67, 54, 46, 0.45);
   display: flex; align-items: center; justify-content: center; z-index: 50;
 }
 .modale {
-  background: var(--carte); border-radius: 16px; padding: 26px 28px;
+  background: var(--panneau); border-radius: 26px; padding: 28px 30px;
   width: min(480px, calc(100vw - 48px)); max-height: 80vh; overflow: auto;
-  box-shadow: 0 24px 60px rgba(29, 42, 58, 0.35);
+  box-shadow: 0 30px 70px rgba(67, 54, 46, 0.4);
 }
-.modale h2 { font-family: var(--titre); font-size: 20px; margin: 0 0 8px; }
-.modale li { padding: 2px 0; }
+.modale h2 { font-size: 21px; font-weight: 800; margin: 0 0 8px; }
+.modale li { padding: 3px 0; }

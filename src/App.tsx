@@ -155,11 +155,11 @@ export default function App() {
 
   return (
     <div className="page">
-      <div className="liseret" />
       <div className="contenu">
         <header>
-          <h1>Filou</h1>
-          <span className="tagline">le chien qui range tes fichiers</span>
+          <span className="museau" aria-hidden="true" />
+          <h1>filou</h1>
+          <span className="tagline">il range tes fichiers, l'air de rien</span>
         </header>
 
         {statut && <div className="statut">{statut}</div>}
@@ -192,7 +192,7 @@ export default function App() {
         {zones && totalVrac === 0 && !statut && (
           <section className="carte vide">
             <h2>Tout est rangé.</h2>
-            <p>Aucun fichier en vrac sur le Bureau ni dans les Téléchargements. Bon chien.</p>
+            <p>Pas un fichier qui traîne sur le Bureau ni dans les Téléchargements. Filou fait le fier.</p>
           </section>
         )}
 

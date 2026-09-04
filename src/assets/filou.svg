@@ -1,43 +1,85 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="200 130 624 680">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
   <defs>
     <linearGradient id="fond" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#fbf4e5"/>
-      <stop offset="1" stop-color="#f0dfc0"/>
+      <stop offset="0" stop-color="#4a3327"/>
+      <stop offset="1" stop-color="#2c1e15"/>
     </linearGradient>
-    <linearGradient id="roux" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#e2743d"/>
-      <stop offset="1" stop-color="#cd5622"/>
+    <radialGradient id="tete" cx="0.42" cy="0.3" r="0.85">
+      <stop offset="0" stop-color="#ee8449"/>
+      <stop offset="0.7" stop-color="#d05a24"/>
+      <stop offset="1" stop-color="#bd4d1e"/>
+    </radialGradient>
+    <linearGradient id="oreille" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#a8461a"/>
+      <stop offset="1" stop-color="#8c3810"/>
     </linearGradient>
-    <linearGradient id="rouxFonce" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#b04a1c"/>
-      <stop offset="1" stop-color="#9c3f14"/>
+    <linearGradient id="museau" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fdf8ec"/>
+      <stop offset="1" stop-color="#efdfc4"/>
     </linearGradient>
+    <linearGradient id="bandana" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#559068"/>
+      <stop offset="1" stop-color="#3c6a4b"/>
+    </linearGradient>
+    <radialGradient id="vignette" cx="0.45" cy="0.35" r="0.75">
+      <stop offset="0.6" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#1d1008" stop-opacity="0.32"/>
+    </radialGradient>
+    <clipPath id="cadre">
+      <rect x="20" y="20" width="984" height="984" rx="224"/>
+    </clipPath>
   </defs>
 
-  <!-- le chien, tête légèrement penchée : l'air de rien -->
-  <g transform="rotate(-5 512 545)">
-    <!-- tête -->
-    <ellipse cx="512" cy="545" rx="235" ry="215" fill="url(#roux)"/>
+  <rect x="20" y="20" width="984" height="984" rx="224" fill="url(#fond)"/>
 
-    <!-- tache de filou sur l'œil gauche -->
-    <circle cx="428" cy="498" r="62" fill="url(#rouxFonce)"/>
+  <g clip-path="url(#cadre)">
+    <g transform="translate(512 610) scale(1.16) translate(-512 -610) rotate(-4 512 590)">
+      <!-- oreilles tombantes, coupées par le cadre -->
+      <path d="M 300 300 C 160 280 90 420 100 620 C 108 780 170 870 260 860 C 340 850 360 720 358 600 C 356 460 350 340 300 300 Z" fill="url(#oreille)"/>
+      <g transform="translate(1024 0) scale(-1 1)">
+        <path d="M 300 300 C 160 280 90 420 100 620 C 108 780 170 870 260 860 C 340 850 360 720 358 600 C 356 460 350 340 300 300 Z" fill="url(#oreille)"/>
+      </g>
 
-    <!-- oreilles tombantes -->
-    <path d="M 354 372 C 282 355 234 430 240 540 C 244 630 278 682 330 678 C 378 674 396 600 398 522 C 400 455 390 398 354 372 Z" fill="url(#rouxFonce)"/>
-    <path d="M 670 372 C 742 355 790 430 784 540 C 780 630 746 682 694 678 C 646 674 628 600 626 522 C 624 455 634 398 670 372 Z" fill="url(#rouxFonce)"/>
+      <!-- houppette -->
+      <path d="M 450 320 Q 462 230 508 200 Q 506 250 525 300 Q 555 240 585 225 Q 570 280 575 325 Z" fill="#d05a24"/>
 
-    <!-- museau crème -->
-    <ellipse cx="512" cy="648" rx="152" ry="108" fill="#faf3e6"/>
+      <!-- tête énorme -->
+      <ellipse cx="512" cy="590" rx="350" ry="320" fill="url(#tete)"/>
 
-    <!-- truffe -->
-    <path d="M 512 650 C 490 645 474 632 474 616 C 474 598 490 589 512 589 C 534 589 550 598 550 616 C 550 632 534 645 512 650 Z" fill="#43362e"/>
+      <!-- tache de filou -->
+      <circle cx="400" cy="520" r="98" fill="#b3511f"/>
 
-    <!-- sourire en coin -->
-    <path d="M 512 654 Q 514 686 550 688" fill="none" stroke="#43362e" stroke-width="16" stroke-linecap="round"/>
+      <!-- museau -->
+      <ellipse cx="512" cy="750" rx="230" ry="165" fill="url(#museau)"/>
 
-    <!-- œil ouvert dans la tache, œil droit qui cligne -->
-    <circle cx="428" cy="500" r="27" fill="#43362e"/>
-    <circle cx="437" cy="491" r="9" fill="#faf3e6"/>
-    <path d="M 536 505 Q 570 478 604 505" fill="none" stroke="#43362e" stroke-width="20" stroke-linecap="round"/>
+      <!-- taches de rousseur -->
+      <circle cx="395" cy="760" r="7" fill="#d9b285"/>
+      <circle cx="370" cy="726" r="7" fill="#d9b285"/>
+      <circle cx="422" cy="731" r="7" fill="#d9b285"/>
+      <circle cx="629" cy="760" r="7" fill="#d9b285"/>
+      <circle cx="654" cy="726" r="7" fill="#d9b285"/>
+      <circle cx="602" cy="731" r="7" fill="#d9b285"/>
+
+      <!-- truffe -->
+      <path d="M 512 745 C 478 738 452 718 452 692 C 452 664 478 650 512 650 C 546 650 572 664 572 692 C 572 718 546 738 512 745 Z" fill="#3a2a20"/>
+      <ellipse cx="492" cy="672" rx="16" ry="10" fill="#5c4636"/>
+
+      <!-- sourire en coin -->
+      <path d="M 512 750 Q 516 800 570 805" fill="none" stroke="#3a2a20" stroke-width="22" stroke-linecap="round"/>
+
+      <!-- œil ouvert dans la tache -->
+      <circle cx="400" cy="525" r="40" fill="#3a2a20"/>
+      <circle cx="414" cy="511" r="13" fill="#fdf8ec"/>
+
+      <!-- clin d'œil et sourcil levé -->
+      <path d="M 590 530 Q 655 480 720 530" fill="none" stroke="#3a2a20" stroke-width="30" stroke-linecap="round"/>
+      <path d="M 600 428 Q 660 402 722 428" fill="none" stroke="#43362e" stroke-width="22" stroke-linecap="round"/>
+
+      <!-- bandana -->
+      <path d="M 130 863 C 300 806 724 806 894 863 L 894 1060 L 130 1060 Z" fill="url(#bandana)"/>
+      <path d="M 452 872 L 572 872 L 512 978 Z" fill="#2e5340"/>
+    </g>
+
+    <rect x="20" y="20" width="984" height="984" fill="url(#vignette)"/>
   </g>
 </svg>

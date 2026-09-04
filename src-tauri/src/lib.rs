@@ -178,9 +178,14 @@ fn find_claude_cli() -> Option<PathBuf> {
         .clone()
 }
 
-fn run_claude_cli(bin: &PathBuf, prompt: &str) -> Result<String, String> {
+fn run_claude_cli(bin: &PathBuf, modele: &str, prompt: &str) -> Result<String, String> {
+    let mut args = vec!["-p", "--output-format", "json"];
+    if !modele.trim().is_empty() {
+        args.push("--model");
+        args.push(modele);
+    }
     let mut enfant = Command::new(bin)
-        .args(["-p", "--output-format", "json"])
+        .args(&args)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
@@ -242,8 +247,26 @@ fn extraire_tableau_json(texte: &str) -> Result<serde_json::Value, String> {
 
 /// Demande à l'IA un dossier de rangement pour chaque nom de fichier.
 /// Renvoie une table nom de fichier -> « Dossier » ou « Dossier/Sous-dossier ».
+/// Async obligatoire : une commande synchrone tourne sur le thread principal
+/// de Tauri et gèlerait toute la fenêtre le temps de la réponse.
 #[tauri::command]
-fn plan_ia(fichiers: Vec<String>) -> Result<HashMap<String, String>, String> {
+async fn plan_ia(fichiers: Vec<String>, modele: Option<String>) -> Result<HashMap<String, String>, String> {
+    tauri::async_runtime::spawn_blocking(move || plan_ia_bloquant(fichiers, modele.unwrap_or_default()))
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+/// Ce que le frontend doit savoir sur l'IA : Claude Code est-il là ?
+#[tauri::command]
+async fn etat_ia() -> Option<String> {
+    tauri::async_runtime::spawn_blocking(|| {
+        find_claude_cli().map(|p| p.to_string_lossy().to_string())
+    })
+    .await
+    .unwrap_or(None)
+}
+
+fn plan_ia_bloquant(fichiers: Vec<String>, modele: String) -> Result<HashMap<String, String>, String> {
     let bin = find_claude_cli()
         .ok_or("Claude Code introuvable sur cette machine : le plan reste heuristique.")?;
     let retenus: Vec<&String> = fichiers.iter().take(MAX_FICHIERS_IA).collect();
@@ -263,7 +286,7 @@ fn plan_ia(fichiers: Vec<String>) -> Result<HashMap<String, String>, String> {
          (un projet reconnaissable, par exemple). Réponds UNIQUEMENT par un tableau JSON, \
          sans aucun texte autour : [{{\"fichier\": \"nom exact\", \"dossier\": \"…\"}}]\n\n{liste}"
     );
-    let reponse = run_claude_cli(&bin, &prompt)?;
+    let reponse = run_claude_cli(&bin, &modele, &prompt)?;
     let tableau = extraire_tableau_json(&reponse)?;
     let mut table = HashMap::new();
     if let Some(items) = tableau.as_array() {
@@ -334,7 +357,13 @@ fn horodatage() -> u64 {
 }
 
 #[tauri::command]
-fn ranger(app: tauri::AppHandle, deplacements: Vec<Deplacement>) -> Result<Bilan, String> {
+async fn ranger(app: tauri::AppHandle, deplacements: Vec<Deplacement>) -> Result<Bilan, String> {
+    tauri::async_runtime::spawn_blocking(move || ranger_bloquant(app, deplacements))
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+fn ranger_bloquant(app: tauri::AppHandle, deplacements: Vec<Deplacement>) -> Result<Bilan, String> {
     let autorisees = zones_autorisees();
     let mut faits: Vec<(String, String)> = Vec::new();
     let mut erreurs = Vec::new();
@@ -442,7 +471,13 @@ fn journal_liste(app: tauri::AppHandle) -> Result<Vec<EntreeJournal>, String> {
 /// d'un état du disque qui n'existe plus). Remet chaque fichier à sa place
 /// et supprime les dossiers créés devenus vides.
 #[tauri::command]
-fn annuler(app: tauri::AppHandle) -> Result<u32, String> {
+async fn annuler(app: tauri::AppHandle) -> Result<u32, String> {
+    tauri::async_runtime::spawn_blocking(move || annuler_bloquant(app))
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+fn annuler_bloquant(app: tauri::AppHandle) -> Result<u32, String> {
     let mut entrees = journal_charger(&app)?;
     let Some(position) = entrees.iter().position(|e| !e.deplacements.is_empty()) else {
         return Err("Rien à annuler.".into());
@@ -507,6 +542,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             inventaire,
             plan_ia,
+            etat_ia,
             ranger,
             journal_liste,
             annuler

@@ -26,6 +26,9 @@ export default function App() {
   const [journal, setJournal] = useState<Entree[]>([])
   const [confirmation, setConfirmation] = useState(false)
   const [iaNote, setIaNote] = useState<string | null>(null)
+  const [reglages, setReglages] = useState(false)
+  const [cheminIa, setCheminIa] = useState<string | null | undefined>(undefined)
+  const [modele, setModele] = useState(() => localStorage.getItem('filouModele') ?? 'haiku')
 
   const analyser = async () => {
     setStatut('Filou renifle le Bureau et les Téléchargements…')
@@ -52,7 +55,13 @@ export default function App() {
   useEffect(() => {
     analyser()
     chargerJournal()
+    invoke<string | null>('etat_ia').then(setCheminIa)
   }, [])
+
+  const changerModele = (m: string) => {
+    setModele(m)
+    localStorage.setItem('filouModele', m)
+  }
 
   // Regroupement par (zone, catégorie), l'ordre suit le volume.
   const groupes = useMemo(() => {
@@ -87,7 +96,7 @@ export default function App() {
     setErreur(null)
     try {
       const noms = zones.flatMap((z) => z.fichiers.map((f) => f.nom))
-      const table = await invoke<Record<string, string>>('plan_ia', { fichiers: noms })
+      const table = await invoke<Record<string, string>>('plan_ia', { fichiers: noms, modele })
       let changes = 0
       setZones((zs) =>
         zs
@@ -161,6 +170,9 @@ export default function App() {
           <img className="logo" src={logo} alt="" />
           <h1>filou</h1>
           <span className="tagline">il range tes fichiers, l'air de rien</span>
+          <button className="petit-bouton coin" onClick={() => setReglages(true)}>
+            Réglages
+          </button>
         </header>
 
         {statut && <div className="statut">{statut}</div>}
@@ -289,6 +301,42 @@ export default function App() {
           </section>
         )}
       </div>
+
+      {reglages && (
+        <div className="voile" onClick={() => setReglages(false)}>
+          <div className="modale" onClick={(e) => e.stopPropagation()}>
+            <h2>Réglages</h2>
+            <h3>Intelligence artificielle</h3>
+            {cheminIa === undefined && <p className="gris">Recherche de Claude Code…</p>}
+            {cheminIa === null && (
+              <p className="gris">
+                Claude Code est introuvable sur cette machine : le bouton « Affiner le plan avec l'IA » ne pourra pas
+                fonctionner. Installe Claude Code (claude.com/claude-code) ou vérifie qu'il est dans le PATH.
+              </p>
+            )}
+            {cheminIa && (
+              <p className="gris">
+                Claude Code détecté (<span className="mono">{cheminIa}</span>). L'affinage passe par ton abonnement
+                Claude, et seuls les noms de fichiers sont envoyés, jamais leur contenu.
+              </p>
+            )}
+            <label className="ligne-reglage">
+              Modèle pour l'affinage
+              <select value={modele} onChange={(e) => changerModele(e.target.value)}>
+                <option value="haiku">Rapide (Haiku)</option>
+                <option value="sonnet">Équilibré (Sonnet)</option>
+                <option value="opus">Malin mais lent (Opus)</option>
+                <option value="">Réglage par défaut du CLI</option>
+              </select>
+            </label>
+            <div className="actions">
+              <button className="gros-bouton" onClick={() => setReglages(false)}>
+                Fermer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {confirmation && (
         <div className="voile" onClick={() => setConfirmation(false)}>

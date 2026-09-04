@@ -37,6 +37,18 @@ body {
 /* --------------------------------------------------------------- le logo */
 header { display: flex; align-items: center; gap: 14px; padding: 26px 0 14px; }
 .logo { width: 48px; height: 48px; }
+header .coin { margin-left: auto; }
+
+.modale h3 { font-size: 15px; font-weight: 700; margin: 14px 0 4px; }
+.ligne-reglage {
+  display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  font-weight: 600; margin: 14px 0;
+}
+.ligne-reglage select {
+  font-family: var(--affiche); font-size: 13.5px; color: var(--brun);
+  background: var(--panneau); border: 1.5px solid var(--sable); border-radius: 10px;
+  padding: 7px 10px;
+}
 header h1 {
   font-size: 34px; font-weight: 800; letter-spacing: -0.02em;
   margin: 0; text-transform: lowercase;

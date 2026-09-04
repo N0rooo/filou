@@ -41,6 +41,7 @@ export default function App() {
   const [cleSaisie, setCleSaisie] = useState('')
   const [modele, setModele] = useState(() => localStorage.getItem('filouModele') ?? 'haiku')
   const [consignes, setConsignes] = useState(() => localStorage.getItem('filouConsignes') ?? '')
+  const [detail, setDetail] = useState(() => localStorage.getItem('filouDetail') ?? 'equilibre')
 
   const analyser = async () => {
     setStatut('Filou renifle le Bureau et les Téléchargements…')
@@ -85,6 +86,11 @@ export default function App() {
   const changerConsignes = (c: string) => {
     setConsignes(c)
     localStorage.setItem('filouConsignes', c)
+  }
+
+  const changerDetail = (d: string) => {
+    setDetail(d)
+    localStorage.setItem('filouDetail', d)
   }
 
   // Regroupement par (zone, racine) : « Projets/Filou/Logos » compte dans la
@@ -138,7 +144,7 @@ export default function App() {
     setErreur(null)
     try {
       const noms = zones.flatMap((z) => z.fichiers.map((f) => f.nom))
-      const table = await invoke<Record<string, string>>('plan_ia', { fichiers: noms, modele, consignes })
+      const table = await invoke<Record<string, string>>('plan_ia', { fichiers: noms, modele, consignes, detail })
       let changes = 0
       setZones((zs) =>
         zs
@@ -462,6 +468,14 @@ export default function App() {
               value={consignes}
               onChange={(e) => changerConsignes(e.target.value)}
             />
+            <label className="ligne-reglage">
+              Niveau de détail de l'arborescence
+              <select value={detail} onChange={(e) => changerDetail(e.target.value)}>
+                <option value="simple">Simple : des racines, pas de sous-dossiers</option>
+                <option value="equilibre">Équilibré : un sous-dossier quand utile</option>
+                <option value="maniaque">Maniaque : sous-dossiers stricts partout</option>
+              </select>
+            </label>
             <label className="ligne-reglage">
               Modèle pour l'affinage
               <select value={modele} onChange={(e) => changerModele(e.target.value)}>

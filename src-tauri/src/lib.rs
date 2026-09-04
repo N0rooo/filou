@@ -246,14 +246,21 @@ fn extraire_tableau_json(texte: &str) -> Result<serde_json::Value, String> {
 }
 
 /// Demande à l'IA un dossier de rangement pour chaque nom de fichier.
-/// Renvoie une table nom de fichier -> « Dossier » ou « Dossier/Sous-dossier ».
+/// Le travail est découpé en lots traités par un petit pool parallèle, et la
+/// progression (lots faits / total) est émise au frontend via « ia-progres ».
 /// Async obligatoire : une commande synchrone tourne sur le thread principal
 /// de Tauri et gèlerait toute la fenêtre le temps de la réponse.
 #[tauri::command]
-async fn plan_ia(fichiers: Vec<String>, modele: Option<String>) -> Result<HashMap<String, String>, String> {
-    tauri::async_runtime::spawn_blocking(move || plan_ia_bloquant(fichiers, modele.unwrap_or_default()))
-        .await
-        .map_err(|e| e.to_string())?
+async fn plan_ia(
+    app: tauri::AppHandle,
+    fichiers: Vec<String>,
+    modele: Option<String>,
+) -> Result<HashMap<String, String>, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        plan_ia_bloquant(&app, fichiers, modele.unwrap_or_default())
+    })
+    .await
+    .map_err(|e| e.to_string())?
 }
 
 /// Ce que le frontend doit savoir sur l'IA : Claude Code est-il là ?
@@ -266,27 +273,89 @@ async fn etat_ia() -> Option<String> {
     .unwrap_or(None)
 }
 
-fn plan_ia_bloquant(fichiers: Vec<String>, modele: String) -> Result<HashMap<String, String>, String> {
+const LOT_IA: usize = 60;
+const TRAVAILLEURS_IA: usize = 3;
+
+#[derive(Serialize, Clone)]
+struct ProgresIa {
+    fait: usize,
+    total: usize,
+}
+
+fn emettre_progres(app: &tauri::AppHandle, fait: usize, total: usize) {
+    use tauri::Emitter;
+    let _ = app.emit("ia-progres", ProgresIa { fait, total });
+}
+
+fn plan_ia_bloquant(
+    app: &tauri::AppHandle,
+    fichiers: Vec<String>,
+    modele: String,
+) -> Result<HashMap<String, String>, String> {
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
     let bin = find_claude_cli()
         .ok_or("Claude Code introuvable sur cette machine : le plan reste heuristique.")?;
-    let retenus: Vec<&String> = fichiers.iter().take(MAX_FICHIERS_IA).collect();
-    let liste = retenus
-        .iter()
-        .map(|n| format!("- {n}"))
-        .collect::<Vec<_>>()
-        .join("\n");
+    let retenus: Vec<String> = fichiers.into_iter().take(MAX_FICHIERS_IA).collect();
+    let lots: Vec<&[String]> = retenus.chunks(LOT_IA).collect();
+    let total = lots.len();
+    emettre_progres(app, 0, total);
+
+    let indice = AtomicUsize::new(0);
+    let fait = AtomicUsize::new(0);
+    let resultats: Vec<Result<HashMap<String, String>, String>> = std::thread::scope(|scope| {
+        let mut mains = Vec::new();
+        for _ in 0..total.min(TRAVAILLEURS_IA) {
+            mains.push(scope.spawn(|| {
+                let mut miens = Vec::new();
+                loop {
+                    let i = indice.fetch_add(1, Ordering::Relaxed);
+                    let Some(lot) = lots.get(i) else { break };
+                    miens.push(classer_lot(&bin, &modele, lot));
+                    let f = fait.fetch_add(1, Ordering::Relaxed) + 1;
+                    emettre_progres(app, f, total);
+                }
+                miens
+            }));
+        }
+        mains
+            .into_iter()
+            .flat_map(|m| m.join().unwrap_or_default())
+            .collect()
+    });
+
+    let mut table = HashMap::new();
+    let mut derniere_erreur: Option<String> = None;
+    for r in resultats {
+        match r {
+            Ok(t) => table.extend(t),
+            Err(e) => derniere_erreur = Some(e),
+        }
+    }
+    if table.is_empty() {
+        return Err(derniere_erreur.unwrap_or_else(|| "L'IA n'a rien proposé d'exploitable.".into()));
+    }
+    Ok(table)
+}
+
+fn classer_lot(
+    bin: &PathBuf,
+    modele: &str,
+    lot: &[String],
+) -> Result<HashMap<String, String>, String> {
+    let liste = lot.iter().map(|n| format!("- {n}")).collect::<Vec<_>>().join("\n");
     let prompt = format!(
         "Tu ranges les fichiers en vrac du Bureau et des Téléchargements d'un utilisateur \
          français. Pour chaque nom de fichier ci-dessous, propose un dossier de rangement \
          court en français, éventuellement avec un sous-dossier (« Dossier » ou \
-         « Dossier/Sous-dossier », deux niveaux maximum). Regroupe fortement : les mêmes \
-         sujets vont ensemble, 12 dossiers racine au grand maximum. Racines suggérées : \
-         Captures d'écran, Images, Documents, Factures, Installeurs, Archives, Code, \
-         Vidéos, Audio, Divers — n'en crée d'autres que si un vrai thème le mérite \
-         (un projet reconnaissable, par exemple). Réponds UNIQUEMENT par un tableau JSON, \
-         sans aucun texte autour : [{{\"fichier\": \"nom exact\", \"dossier\": \"…\"}}]\n\n{liste}"
+         « Dossier/Sous-dossier », deux niveaux maximum). Regroupe fortement et tiens-toi \
+         aux racines suggérées : Captures d'écran, Images, Documents, Factures, \
+         Installeurs, Archives, Code, Vidéos, Audio, Divers — n'en crée d'autres que si \
+         un vrai thème le mérite (un projet reconnaissable, par exemple). Réponds \
+         UNIQUEMENT par un tableau JSON, sans aucun texte autour : \
+         [{{\"fichier\": \"nom exact\", \"dossier\": \"…\"}}]\n\n{liste}"
     );
-    let reponse = run_claude_cli(&bin, &modele, &prompt)?;
+    let reponse = run_claude_cli(bin, modele, &prompt)?;
     let tableau = extraire_tableau_json(&reponse)?;
     let mut table = HashMap::new();
     if let Some(items) = tableau.as_array() {
@@ -299,9 +368,6 @@ fn plan_ia_bloquant(fichiers: Vec<String>, modele: String) -> Result<HashMap<Str
             };
             table.insert(fichier.to_string(), nettoyer_dossier(dossier));
         }
-    }
-    if table.is_empty() {
-        return Err("L'IA n'a rien proposé d'exploitable.".into());
     }
     Ok(table)
 }

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { invoke } from '@tauri-apps/api/core'
+import { listen } from '@tauri-apps/api/event'
 import logo from './assets/filou.svg'
 import './styles.css'
 
@@ -27,6 +28,9 @@ export default function App() {
   const [confirmation, setConfirmation] = useState(false)
   const [iaNote, setIaNote] = useState<string | null>(null)
   const [reglages, setReglages] = useState(false)
+  const [iaProgres, setIaProgres] = useState<{ fait: number; total: number } | null>(null)
+  const [iaDebut, setIaDebut] = useState<number | null>(null)
+  const [, setTic] = useState(0)
   const [cheminIa, setCheminIa] = useState<string | null | undefined>(undefined)
   const [modele, setModele] = useState(() => localStorage.getItem('filouModele') ?? 'haiku')
 
@@ -56,6 +60,13 @@ export default function App() {
     analyser()
     chargerJournal()
     invoke<string | null>('etat_ia').then(setCheminIa)
+    const abo = listen<{ fait: number; total: number }>('ia-progres', (e) => setIaProgres(e.payload))
+    // Un tic par seconde pour rafraîchir le temps écoulé/restant affiché.
+    const tic = setInterval(() => setTic((t) => t + 1), 1000)
+    return () => {
+      abo.then((desabo) => desabo())
+      clearInterval(tic)
+    }
   }, [])
 
   const changerModele = (m: string) => {
@@ -92,7 +103,9 @@ export default function App() {
 
   const affinerIa = async () => {
     if (!zones) return
-    setStatut("Filou réfléchit avec l'IA (jusqu'à quelques minutes)…")
+    setStatut("Filou réfléchit avec l'IA…")
+    setIaProgres(null)
+    setIaDebut(Date.now())
     setErreur(null)
     try {
       const noms = zones.flatMap((z) => z.fichiers.map((f) => f.nom))
@@ -123,6 +136,8 @@ export default function App() {
       setErreur(String(e))
     } finally {
       setStatut(null)
+      setIaDebut(null)
+      setIaProgres(null)
     }
   }
 
@@ -175,7 +190,31 @@ export default function App() {
           </button>
         </header>
 
-        {statut && <div className="statut">{statut}</div>}
+        {statut && (
+          <div className="statut">
+            {(() => {
+              if (!iaDebut) return statut
+              const ecoule = (Date.now() - iaDebut) / 1000
+              const duree = (s: number) =>
+                s >= 60
+                  ? `${Math.floor(s / 60)} min ${String(Math.round(s % 60)).padStart(2, '0')} s`
+                  : `${Math.max(1, Math.round(s))} s`
+              if (iaProgres && iaProgres.total > 0 && iaProgres.fait >= iaProgres.total)
+                return 'Filou termine…'
+              if (iaProgres && iaProgres.fait > 0) {
+                const restant = (ecoule / iaProgres.fait) * (iaProgres.total - iaProgres.fait)
+                return `Filou réfléchit… lot ${iaProgres.fait}/${iaProgres.total} terminé, encore ~${duree(restant)}`
+              }
+              const lots = iaProgres?.total
+              return `Filou réfléchit${lots ? ` (${lots} lot${lots > 1 ? 's' : ''} à traiter)` : ''}… ${duree(ecoule)} écoulées`
+            })()}
+            {iaDebut && iaProgres && iaProgres.total > 0 && (
+              <div className="jauge">
+                <div style={{ width: `${Math.max(4, (iaProgres.fait / iaProgres.total) * 100)}%` }} />
+              </div>
+            )}
+          </div>
+        )}
         {erreur && <div className="erreur">{erreur}</div>}
         {iaNote && <div className="note">{iaNote}</div>}
 

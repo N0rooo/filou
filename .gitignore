@@ -22,3 +22,5 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+# Clé privée de signature des mises à jour : IRREMPLAÇABLE, jamais commitée
+src-tauri/updater.local.key

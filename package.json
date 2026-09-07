@@ -1,13 +1,14 @@
 {
   "name": "filou",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.2.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "TAURI_SIGNING_PRIVATE_KEY=\"$(cat src-tauri/updater.local.key)\" TAURI_SIGNING_PRIVATE_KEY_PASSWORD=\"\" tauri build",
     "preview": "vite preview",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "build:front": "tsc && vite build"
   },
   "dependencies": {
     "react": "^19.1.0",

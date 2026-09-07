@@ -732,10 +732,42 @@ fn annuler_bloquant(app: tauri::AppHandle) -> Result<u32, String> {
     Ok(remis)
 }
 
+/// Vérifie au lancement si une mise à jour est publiée ; si oui, propose de
+/// l'installer via un dialogue natif, puis relance l'app.
+fn verifier_mise_a_jour(app: tauri::AppHandle) {
+    tauri::async_runtime::spawn(async move {
+        use tauri_plugin_dialog::{DialogExt, MessageDialogButtons};
+        use tauri_plugin_updater::UpdaterExt;
+        let Ok(updater) = app.updater() else { return };
+        let Ok(Some(maj)) = updater.check().await else { return };
+        let version = maj.version.clone();
+        let installer = app
+            .dialog()
+            .message(format!(
+                "La version {version} est disponible.\nL'installer maintenant ?"
+            ))
+            .title("Mise à jour")
+            .buttons(MessageDialogButtons::OkCancelCustom(
+                "Mettre à jour".into(),
+                "Plus tard".into(),
+            ))
+            .blocking_show();
+        if installer && maj.download_and_install(|_, _| {}, || {}).await.is_ok() {
+            app.restart();
+        }
+    });
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .setup(|app| {
+            verifier_mise_a_jour(app.handle().clone());
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             inventaire,
             plan_ia,

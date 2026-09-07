@@ -1,6 +1,6 @@
 [package]
 name = "filou"
-version = "0.1.0"
+version = "0.2.0"
 description = "Filou, le chien qui range tes fichiers"
 authors = ["Thomas Aubert"]
 edition = "2021"
